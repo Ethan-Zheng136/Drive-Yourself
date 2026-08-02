@@ -1,0 +1,85 @@
+\section{Experiments}
+\label{sec:exp}
+
+\subsection{Setup}
+\TODO{Backbone (AutoVLA, Qwen2.5-VL-3B), warm start, NAVSIM navtest split,
+metrics (PDMS v1; EPDMS v2), style sub-metrics (DAI/PAI/SAI), baselines.}
+
+\subsection{Main Results: Safety (NAVSIM v1 PDMS)}
+\label{sec:exp:v1}
+\cref{tab:v1} reports closed-loop PDMS on navtest with pdm-select
+($N{=}16$), together with our style sub-metrics. Style can be steered across a
+wide range via $\alpha$ while PDMS stays strong; our best configuration reaches
+\textbf{0.954}.
+
+\begin{table}[t]
+    \centering
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{llcccc}
+        \toprule
+        config & $\alpha$ & PDMS$\uparrow$ & DAI & PAI & SAI \\
+        \midrule
+        human anchor        & --  & --     & 50.0 & 50.0 & 50.0 \\
+        base (AutoVLA)      & --  & 0.912  & 48.2 & 45.9 & --   \\
+        \midrule
+        gtrs                & 0.5 & 0.923  & 60.4 & 50.5 & 60.3 \\
+        hydra\_mdp          & 0.5 & 0.923  & 59.0 & 50.7 & 58.9 \\
+        ddv2                & 0.75& 0.947  & 39.9 & 57.0 & 99.8 \\
+        \midrule
+        ddv2+gtrs 60/40     & 1.0 & \textbf{0.954} & 40.7 & 57.5 & 99.8 \\
+        ddv2+hydra 60/40    & 1.0 & 0.952  & 41.0 & 58.1 & 99.8 \\
+        ddv2+goalflow 50/50 & 1.0 & 0.950  & 40.2 & 55.5 & 99.8 \\
+        \bottomrule
+    \end{tabular}
+    \caption{NAVSIM v1 (navtest) PDMS with pdm-select, and YouDrive style
+    sub-metrics (DAI/PAI/SAI). Representative rows; full sweep in the appendix.
+    \TODO{finalize row selection and sub-metric columns}}
+    \label{tab:v1}
+\end{table}
+
+\subsection{Safety under the Extended Suite (NAVSIM v2 EPDMS)}
+\label{sec:exp:v2}
+We further evaluate under the NAVSIM~v2 extended metric suite (EPDMS), which
+adds lane-keeping and extended-comfort terms and reactive traffic agents.
+\cref{tab:v2} reports EPDMS and its decomposition.
+\TODO{PLACEHOLDER TABLE --- v2 numbers to be filled from a \emph{deployable}
+selector (pdm-select or a learned surrogate), NOT from the oracle/EPDMS-select
+ceiling of \cref{sec:exp:headroom}. Working assumption for scaffolding: v2
+reaches parity with the v1-level safety standard.}
+
+\begin{table}[t]
+    \centering
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{lccccc}
+        \toprule
+        config & EPDMS$\uparrow$ & NC & DAC & LK & EC \\
+        \midrule
+        human anchor  & \TODO{}$^{\ast}$ & -- & -- & -- & -- \\
+        base (ours)   & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        best styled   & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        \bottomrule
+    \end{tabular}
+    \caption{NAVSIM v2 (navtest) EPDMS decomposition. \textbf{Placeholder};
+    numbers pending a deployable selector. $^{\ast}$human-GT calibrates the
+    achievable upper bound of the corrected single-stage EPDMS.}
+    \label{tab:v2}
+\end{table}
+
+\subsection{Selection Headroom (Diagnostic)}
+\label{sec:exp:headroom}
+To quantify how much of the v2 gap is attributable to \emph{selection} rather
+than \emph{generation}, we dump all $N$ candidates per frame and, offline,
+measure the per-candidate mean and the oracle ceiling (best-of-$N$ under the
+corrected single-stage EPDMS). We stress that the ceiling uses the evaluation
+metric to pick and is therefore an \emph{upper bound only}, not a reportable
+result; it motivates the deployable surrogate selector of
+\cref{sec:method:select}.
+\TODO{Insert headroom table: mean vs.\ ceiling per config; gap above current
+deployable baseline.}
+
+\subsection{Style Controllability and Multi-modal Commitment}
+\label{sec:exp:style}
+\TODO{Style-map coverage vs.\ single-point E2E; commitment / mode-averaging
+analysis; qualitative trajectories across $\alpha$.}

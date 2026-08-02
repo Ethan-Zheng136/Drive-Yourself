@@ -1,0 +1,26 @@
+{
+  "fmhead_fm3_lite.yaml": {
+    "config": "fmhead_fm3_lite.yaml",
+    "mode": "soft",
+    "train_loss_init": 1.8945216298103333,
+    "train_loss_final": 1.1390543937683106,
+    "flow_only_init": 0.7761104702949524,
+    "flow_only_final": 1.3786359131336212,
+    "finite": true,
+    "train_loss_down": true,
+    "fm_grad_params": 83,
+    "pass": true
+  },
+  "fmhead_fm3_kin.yaml": {
+    "config": "fmhead_fm3_kin.yaml",
+    "mode": "kinematic",
+    "train_loss_init": 0.9409017443656922,
+    "train_loss_final": 0.3792073726654053,
+    "flow_only_init": 0.7792537808418274,
+    "flow_only_final": 0.4447602778673172,
+    "finite": true,
+    "train_loss_down": true,
+    "fm_grad_params": 83,
+    "pass": true
+  }
+}

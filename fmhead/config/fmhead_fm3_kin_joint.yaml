@@ -1,0 +1,95 @@
+# fmhead_fm3_kin_joint -- the fm3-kin full-FT recipe (config/fmhead_fm3_kin.yaml) with a
+# JOINTLY-fired FMHeadScorer (see fmhead_sft_joint.py). IDENTICAL to fmhead_fm3_kin.yaml
+# except (a) a new `joint_scorer:` block, (b) a NEW ckpt_dir so it never clobbers the fm3-kin
+# GOLD run. Set joint_scorer.enabled=false to reproduce fmhead_fm3_kin.yaml exactly.
+
+model:
+  use_cot: false
+  pretrained_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct
+  train_vision_backbone: false       # freeze vlm.visual (== fm3-kin)
+  train_lm_backbone: true            # train vlm.model jointly with FMHead (== fm3-kin, full-FT)
+  codebook_cache_path: "codebook_cache/agent_vocab.pkl"
+  sft_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/AutoVLA/AutoVLA_PDMS_89.ckpt  # warm-start
+  trajectory:
+    num_poses: 10
+    interval_length: 0.5
+    time_horizon: 5.0
+  tokens:
+    action_start_id: 151665
+    ignore_index: -100
+    assistant_id: [151644, 77091]
+  video:
+    min_pixels: 109760
+    max_pixels: 109760
+
+training:
+  batch_size: 1
+  learning_rate: 2.0e-5
+  epochs: 15
+  num_workers: 4
+  weight_decay: 0.01
+  lr_warmup_step: 500
+  lr_step_frequency: 2000
+  lr_step_gamma: 0.98
+  train_sample_size: null
+  accumulate_grad_batches: 4
+
+data:
+  train:
+      json_dataset_path:
+        - /mnt/pfs/zhengguantian/autovla/persona/nocot_navtrain_gt_split/train
+      sensor_data_path:
+        - /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+  val:
+      json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_navtrain_gt_split/val
+      sensor_data_path: /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+
+inference:
+  batch_size: 1
+  num_workers: 2
+  sample:
+    max_length: 2048
+    temperature: 0.01
+    top_k: 0
+    top_p: 1.0
+
+# ---- FMHead decoder (== fm3-kin: control-space unicycle, 100 Euler steps) ----
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10
+  traj_dim: 2                        # (a_long, yaw_rate) control channels
+  style_dropout_prob: 0.0
+  num_samples: 16
+  num_steps: 100                     # == fm3-kin; also the in-loop candidate-decode steps
+  cfg_weight: 1.0
+  constraint:
+    mode: kinematic
+    accel_max: 5.0
+    yawrate_max: 1.0
+    v_max: 25.0
+    dt: 0.5
+    jerk_weight: 0.01
+    curv_weight: 0.0
+    smooth_t_min: 0.5
+
+c_reduce: mean
+style_alpha: 0.0
+
+normalizer_path: /root/workspace/fmhead/traj_norm_stats_ctrl.json
+
+# ---- JOINT scorer (NEW; fmhead_sft_joint.py reads this block) ----
+joint_scorer:
+  enabled: true
+  env_in_dim: 2048                   # Qwen2.5-VL-3B hidden (== ctx last dim)
+  d_model: 256
+  n_decoder_layers: 3
+  metrics: v1                        # v1 heads (navtrain12k cache); "v2" needs a v2 cache to label
+  loss_weight: 0.5                   # lambda on the scorer distillation loss
+  metric_cache: /mnt/pfs/zhengguantian/autovla/exp/metric_cache_navtrain12k
+
+# ---- output (NEW PFS dir, distinct from the fm3-kin GOLD run) ----
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/fmhead_fm3_kin_joint

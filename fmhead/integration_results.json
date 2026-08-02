@@ -1,0 +1,46 @@
+{
+  "device": "cuda",
+  "A_dims": {
+    "pass": true,
+    "d_cond": 2048,
+    "d_style": 2048,
+    "horizon": 10,
+    "traj_dim": 2
+  },
+  "B_extract": {
+    "pass": true,
+    "c_shape": [
+      3,
+      2048
+    ],
+    "c_dtype": "torch.bfloat16",
+    "style_abs_mean": 0.012781924568116665
+  },
+  "C_decode": {
+    "pass": true,
+    "poses_shape": [
+      3,
+      10,
+      3
+    ]
+  },
+  "D_trainstep": {
+    "pass": true,
+    "loss_start": 0.8976467847824097,
+    "loss_end": 0.9098171591758728,
+    "params_with_grad": 84,
+    "n_params": 86
+  },
+  "E_overfit": {
+    "pass": true,
+    "init_loss": 0.9437280178070069,
+    "final_loss": 0.2628430865705013,
+    "s_plus_frac_left": 1.0,
+    "s_minus_frac_right": 1.0
+  },
+  "F_subclass_guard": {
+    "pass": true,
+    "note": "guarded import raised ModuleNotFoundError (expected outside AutoVLA env)"
+  },
+  "all_pass": true
+}

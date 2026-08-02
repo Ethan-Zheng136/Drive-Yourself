@@ -1,0 +1,403 @@
+{
+  "device": "cuda",
+  "B": 3,
+  "S": 49,
+  "T_ctx": 49,
+  "head_params_M": 8.55,
+  "loss": 2.1834311485290527,
+  "magnitude_table": [
+    {
+      "name": "vlm.hidden_last",
+      "shape": [
+        3,
+        49,
+        2048
+      ],
+      "dtype": "torch.bfloat16",
+      "mean": -0.032630033791065216,
+      "std": 4.288297653198242,
+      "min": -153.0,
+      "max": 111.0,
+      "norm": 2352.99169921875
+    },
+    {
+      "name": "ctx",
+      "shape": [
+        3,
+        49,
+        2048
+      ],
+      "dtype": "torch.bfloat16",
+      "mean": -0.035547852516174316,
+      "std": 4.185077667236328,
+      "min": -153.0,
+      "max": 111.0,
+      "norm": 2296.371337890625
+    },
+    {
+      "name": "ctx_mask",
+      "shape": [
+        3,
+        49
+      ],
+      "dtype": "torch.bfloat16",
+      "mean": 0.9523809552192688,
+      "std": 0.21368691325187683,
+      "min": 0.0,
+      "max": 1.0,
+      "norm": 11.832159996032715
+    },
+    {
+      "name": "anchor(c v1)",
+      "shape": [
+        3,
+        2048
+      ],
+      "dtype": "torch.bfloat16",
+      "mean": 0.03894757479429245,
+      "std": 4.897592067718506,
+      "min": -68.5,
+      "max": 106.5,
+      "norm": 383.87213134765625
+    },
+    {
+      "name": "s (style)",
+      "shape": [
+        3,
+        2048
+      ],
+      "dtype": "torch.bfloat16",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "ctx_proj(ctx)",
+      "shape": [
+        3,
+        49,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": -2.432842594046747e-09,
+      "std": 0.975912868976593,
+      "min": -3.5854787826538086,
+      "max": 3.522613048553467,
+      "norm": 189.3145294189453
+    },
+    {
+      "name": "x_embedder(x_t)",
+      "shape": [
+        3,
+        10,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0003396522661205381,
+      "std": 0.11269718408584595,
+      "min": -0.5146429538726807,
+      "max": 0.5405589938163757,
+      "norm": 9.875687599182129
+    },
+    {
+      "name": "temporal_pos",
+      "shape": [
+        1,
+        10,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.47981101274490356,
+      "std": 0.5195063352584839,
+      "min": -0.9999983906745911,
+      "max": 1.0,
+      "norm": 35.7770881652832
+    },
+    {
+      "name": "t_embedder(t)",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": -0.01778228208422661,
+      "std": 0.41678231954574585,
+      "min": -1.2755274772644043,
+      "max": 1.021302342414856,
+      "norm": 11.553202629089355
+    },
+    {
+      "name": "cvec (adaLN in)",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": -0.01778228208422661,
+      "std": 0.41678231954574585,
+      "min": -1.2755274772644043,
+      "max": 1.021302342414856,
+      "norm": 11.553202629089355
+    },
+    {
+      "name": "adaLN.shift_sa",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "adaLN.scale_sa",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "adaLN.gate_sa",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "adaLN.shift_ca",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "adaLN.scale_ca",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "adaLN.gate_ca",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "adaLN.shift_mlp",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "adaLN.scale_mlp",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "adaLN.gate_mlp",
+      "shape": [
+        3,
+        256
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    },
+    {
+      "name": "gt_xy (metres)",
+      "shape": [
+        3,
+        10,
+        2
+      ],
+      "dtype": "torch.float32",
+      "mean": 5.042551040649414,
+      "std": 7.914508819580078,
+      "min": -0.1710023730993271,
+      "max": 33.510032653808594,
+      "norm": 72.25901794433594
+    },
+    {
+      "name": "z1 (normalized)",
+      "shape": [
+        3,
+        10,
+        2
+      ],
+      "dtype": "torch.float32",
+      "mean": -0.1491622030735016,
+      "std": 0.7903321385383606,
+      "min": -2.671741247177124,
+      "max": 0.9152337312698364,
+      "norm": 6.179630756378174
+    },
+    {
+      "name": "z0 (noise N(0,1))",
+      "shape": [
+        3,
+        10,
+        2
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.2595686614513397,
+      "std": 0.9771586060523987,
+      "min": -1.8163765668869019,
+      "max": 2.5440971851348877,
+      "norm": 7.770331382751465
+    },
+    {
+      "name": "u = z1 - z0 (target vel)",
+      "shape": [
+        3,
+        10,
+        2
+      ],
+      "dtype": "torch.float32",
+      "mean": -0.4087308347225189,
+      "std": 1.2973531484603882,
+      "min": -3.0106430053710938,
+      "max": 2.49198842048645,
+      "norm": 10.456005096435547
+    },
+    {
+      "name": "v (predicted vel)",
+      "shape": [
+        3,
+        10,
+        2
+      ],
+      "dtype": "torch.float32",
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "norm": 0.0
+    }
+  ],
+  "verdicts": {
+    "1_ctx": {
+      "pass": true,
+      "dtype_bf16": true,
+      "pertoken_norm_sane": true,
+      "mask_sane": true,
+      "dim2048": true,
+      "valid_tokens_per_row": [
+        44,
+        49,
+        47
+      ],
+      "tok_norm_mean": 193.17430114746094,
+      "tok_norm_min": 137.47389221191406,
+      "tok_norm_max": 231.977783203125
+    },
+    "2_style_zero": {
+      "pass": true,
+      "exactly_zero": true
+    },
+    "3_projections": {
+      "pass": true,
+      "ctx_proj_std_sane": true,
+      "adaLN_zero_at_init": true,
+      "adaLN_absmax": 0.0
+    },
+    "4_flow": {
+      "pass": true,
+      "gt_absmax_m": 33.510032653808594,
+      "z1_absmax": 2.671741247177124,
+      "z1_is_O1": true,
+      "metres_were_O10": true,
+      "loss": 2.1834311485290527,
+      "loss_is_O1": true
+    },
+    "5_dims": {
+      "pass": true,
+      "ctx_dim": 2048,
+      "proj_dim": 256,
+      "vel_shape": [
+        3,
+        10,
+        2
+      ]
+    },
+    "6_grad": {
+      "pass": true,
+      "frozen_head_grad_elems_M": 7.5,
+      "frozen_head_grad_finite": true,
+      "frozen_vlm_grads": 0,
+      "fullft_lm_grad_tensors": 10,
+      "fullft_lm_grad_finite": true,
+      "unfrozen_layer": 35
+    },
+    "7_dtype": {
+      "pass": true,
+      "torch.float32": {
+        "loss": 1.5536726713180542,
+        "loss_dtype": "torch.float32",
+        "trajs_finite": true,
+        "pass": true
+      },
+      "torch.bfloat16": {
+        "loss": 1.8947832584381104,
+        "loss_dtype": "torch.float32",
+        "trajs_finite": true,
+        "pass": true
+      }
+    }
+  },
+  "all_pass": true
+}

@@ -1,0 +1,20 @@
+{
+  "loss_init": 1.0941869735717773,
+  "loss_final": 0.9559459328651428,
+  "lm_params_with_grad": 434,
+  "lm_grad_sum": 40614.55043029785,
+  "fm_params_with_grad": 61,
+  "fm_grad_sum": 2359.415956011042,
+  "vision_trainable": 0,
+  "vision_grad_sum": 0.0,
+  "lm_trainable_params": 3089577984,
+  "fm_trainable_params": 7361538,
+  "checks": {
+    "a_loss": true,
+    "b_lm_grad": true,
+    "c_fm_grad": true,
+    "d_vision_frozen": true,
+    "e_loss_down": true
+  },
+  "all_pass": true
+}

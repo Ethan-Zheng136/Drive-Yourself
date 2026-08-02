@@ -1,0 +1,106 @@
+{
+  "kin": {
+    "human": {
+      "v_avg": 4.61807448550141,
+      "v_std": 0.690524388402878,
+      "peak_accel": 0.24458531164035513,
+      "peak_decel": 0.3058668740971413,
+      "long_jerk_rms": 0.28984403225417005,
+      "lat_amax": 0.08980610009936285,
+      "lat_jerk_rms": 0.10261521774829288,
+      "yaw_rate_max": 0.027108807939975207
+    },
+    "autovla": {
+      "v_avg": 4.605120420596734,
+      "v_std": 0.7364837533638923,
+      "peak_accel": 0.5281548507316671,
+      "peak_decel": 0.6151266671886084,
+      "long_jerk_rms": 0.8865043067028353,
+      "lat_amax": 0.42499643564224243,
+      "lat_jerk_rms": 0.47501372868331765,
+      "yaw_rate_max": 0.12542792073939357
+    },
+    "diffusiondrive": {
+      "v_avg": 4.596288401496977,
+      "v_std": 0.6429382616662043,
+      "peak_accel": 0.37879319385432453,
+      "peak_decel": 0.4965320626220926,
+      "long_jerk_rms": 0.722493855503517,
+      "lat_amax": 0.37036067247390747,
+      "lat_jerk_rms": 0.42366701195797435,
+      "yaw_rate_max": 0.1082503012183304
+    },
+    "diffusiondrivev2": {
+      "v_avg": 4.857660264704774,
+      "v_std": 0.9671138802490142,
+      "peak_accel": 2.0381113997141256,
+      "peak_decel": 1.9624765505045587,
+      "long_jerk_rms": 4.162783323773572,
+      "lat_amax": 1.2504723072052002,
+      "lat_jerk_rms": 1.9891542584230422,
+      "yaw_rate_max": 0.3269525178334571
+    },
+    "transfuser": {
+      "v_avg": 4.567925471202049,
+      "v_std": 0.6226866030463523,
+      "peak_accel": 0.23201847786806518,
+      "peak_decel": 0.2473541240654491,
+      "long_jerk_rms": 0.4006387933831934,
+      "lat_amax": 0.28042685985565186,
+      "lat_jerk_rms": 0.26263830830644724,
+      "yaw_rate_max": 0.07670684683149395
+    }
+  },
+  "env": {
+    "human": {
+      "thw_min": 3.785,
+      "ttc_min": 4.391500000000001,
+      "lead_gap_min": 12.906,
+      "dist_any_min": 4.534,
+      "dist_vru_min": 12.063
+    },
+    "autovla": {
+      "thw_min": 3.764,
+      "ttc_min": 4.371,
+      "lead_gap_min": 12.8275,
+      "dist_any_min": 4.503,
+      "dist_vru_min": 12.078
+    },
+    "diffusiondrive": {
+      "thw_min": 3.913,
+      "ttc_min": 4.603,
+      "lead_gap_min": 13.912,
+      "dist_any_min": 4.9325,
+      "dist_vru_min": 12.733
+    },
+    "diffusiondrivev2": {
+      "thw_min": 3.417,
+      "ttc_min": 3.9205,
+      "lead_gap_min": 13.568,
+      "dist_any_min": 4.923,
+      "dist_vru_min": 12.607
+    },
+    "transfuser": {
+      "thw_min": 3.875,
+      "ttc_min": 4.536,
+      "lead_gap_min": 13.925,
+      "dist_any_min": 4.869,
+      "dist_vru_min": 12.771
+    }
+  },
+  "labels": {
+    "v_avg": "平均速度(m/s)",
+    "v_std": "速度波动(m/s)",
+    "peak_accel": "峰值加速(m/s2)",
+    "peak_decel": "峰值刹车(m/s2)",
+    "long_jerk_rms": "纵向jerk(m/s3)",
+    "lat_amax": "横向加速度(m/s2)",
+    "lat_jerk_rms": "横向jerk(m/s3)",
+    "yaw_rate_max": "最大偏航率(rad/s)",
+    "thw_min": "THW车头时距(s)",
+    "ttc_min": "min-TTC(s)",
+    "lead_gap_min": "前车间距(m)",
+    "dist_any_min": "最近他车(m)",
+    "dist_vru_min": "最近VRU(m)"
+  }
+}

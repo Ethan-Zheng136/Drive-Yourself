@@ -1,0 +1,54 @@
+{
+  "device": "cuda",
+  "gold": {
+    "pass": true,
+    "missing": 0,
+    "unexpected": 0,
+    "poses_shape": [
+      1,
+      10,
+      3
+    ],
+    "constraint_mode_default": "none"
+  },
+  "by_construction_init": {
+    "gt": 0.229844331741333,
+    "free_xy": 193.58755493164062,
+    "kinematic": 2.135019540786743,
+    "pass": true
+  },
+  "train": {
+    "fm2_none": {
+      "init_loss": 1.3022,
+      "final_loss": 0.1011,
+      "finite": true,
+      "loss_down": true,
+      "sampled_long_jerk": 2.23
+    },
+    "fm3_kin": {
+      "init_loss": 1.6541,
+      "final_loss": 0.1426,
+      "finite": true,
+      "loss_down": true,
+      "sampled_long_jerk": 0.283
+    },
+    "fm3_lite_soft_sweep": {
+      "0.0": 2.23,
+      "0.03": 2.736,
+      "0.05": 0.719,
+      "0.2": 3.667
+    }
+  },
+  "agent_decode": {
+    "pass": true,
+    "poses_shape": [
+      1,
+      16,
+      10,
+      3
+    ],
+    "reach_v0_5p8": 30.7,
+    "reach_v0_0": 2.24
+  },
+  "all_pass": true
+}

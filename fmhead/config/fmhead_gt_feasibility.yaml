@@ -1,0 +1,59 @@
+# FMHead feasibility config: "normal AutoVLA + human GT", STYLE AXIS OFF.
+#
+# Goal: prove the FMHead decoder is a viable replacement for AutoVLA's codebook
+# decoder under the SAME base AutoVLA weights, conditioning on scene content c only
+# (s = 0). No persona LoRA. Single frozen-VLM forward per step. GT = REAL human
+# navtrain trajectories (nocot_navtrain12k), NOT the DDv2 teacher.
+#
+# Code in /root/workspace/fmhead/; checkpoints to PFS; AutoVLA repo untouched.
+
+# Reuse this AutoVLA config for model/tokens/video/sft base weights (its dataset
+# path is overridden below to the human-GT set).
+autovla_config: training/youdrive-ddv2-persona-lora-big-l2
+
+# --- frozen pre-decoder stack ---
+load_sft_base: true                 # load AutoVLA SFT/PDMS base (sft_model_path) under the head
+lora_adapter_path: none             # STYLE AXIS OFF -> no persona LoRA, s=0, single VLM forward
+freeze_vlm: true
+style_mode: none                    # none => s=0 (content-only). (styled|none)
+style_alpha: 0.0                    # 0 => s=0 even if a LoRA were present
+c_reduce: mean                      # action-region hidden pooling
+
+# --- HUMAN-GT navtrain dataset (overrides the autovla_config data path) ---
+# nocot_navtrain12k = original human/log-replay GT (dataset_name=nuplan), 11,988 scenes,
+# same JSON schema as the teacher sets -> loads via AutoVLA SFTDataset unchanged.
+dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_navtrain12k
+
+# --- FMHead hyperparameters (the trainable decoder) ---
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10
+  traj_dim: 2
+  style_dropout_prob: 0.0           # no CFG/style dropout in the content-only regime
+  num_samples: 16
+  num_steps: 30                     # v2: 10 -> 30 Euler steps (GoalFlow uses 100)
+  cfg_weight: 1.0                   # w=1 (no style guidance; s=0 anyway)
+
+# --- normalizer fitted on HUMAN-GT navtrain (traj_norm_stats_gt.json) ---
+normalizer_path: /root/workspace/fmhead/traj_norm_stats_gt.json
+
+# --- optimizer / schedule (FMHead params only) ---
+train:
+  lr: 1.0e-3
+  weight_decay: 0.01
+  batch_size: 1
+  accumulate_grad_batches: 4
+  max_steps: 20000
+  warmup_steps: 200
+  grad_clip: 1.0
+  log_every: 20
+  ckpt_every: 1000
+  num_workers: 4
+  seed: 42
+
+# --- checkpoints (PFS, NOT workspace) ---
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/fmhead_ckpts_gt

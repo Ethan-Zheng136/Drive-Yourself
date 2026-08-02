@@ -1,0 +1,48 @@
+% YouDrive -- CVPR 2026 submission
+% Template: CVPR 2026 official author-kit (cvpr-org/author-kit, CVPR2026-v1).
+
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+%%%%%%%%% PAPER TYPE  - PLEASE UPDATE FOR FINAL VERSION
+% \usepackage{cvpr}              % To produce the CAMERA-READY version
+\usepackage[review]{cvpr}      % To produce the REVIEW version
+% \usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
+
+% Import additional packages in the preamble file, before hyperref
+\input{preamble}
+
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
+
+%%%%%%%%% PAPER ID  - PLEASE UPDATE
+\def\paperID{*****} % *** Enter the Paper ID here
+\def\confName{CVPR}
+\def\confYear{2026}
+
+%%%%%%%%% TITLE - PLEASE UPDATE
+\title{YouDrive: Driving Style as a Steerable Axis for\\
+Personalized End-to-End Autonomous Driving}
+
+%%%%%%%%% AUTHORS - anonymous for review
+\author{Anonymous CVPR submission\\
+Paper ID \paperID}
+
+\begin{document}
+\maketitle
+\input{sec/0_abstract}
+\input{sec/1_intro}
+\input{sec/2_related}
+\input{sec/3_method}
+\input{sec/4_experiments}
+\input{sec/5_conclusion}
+
+{
+    \small
+    \bibliographystyle{ieeenat_fullname}
+    \bibliography{main}
+}
+
+% WARNING: delete supplementary from the main submission PDF if submitting separately.
+\input{sec/X_suppl}
+
+\end{document}

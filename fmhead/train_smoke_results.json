@@ -1,0 +1,15 @@
+{
+  "world_size": 1,
+  "ddp": false,
+  "vlm_grads_after_backward": 0,
+  "fmhead_trainable": 3014661,
+  "loss_first10": 1.4949174046516418,
+  "loss_last10": 1.5901995718479156,
+  "ckpt": "/mnt/pfs/zhengguantian/autovla/persona/fmhead_ckpts_style_ddv2/2026-07-16_02-34-00_smoke/fmhead_final.pt",
+  "reload_ok": true,
+  "ddp_param_sync": true,
+  "ran_text_only": true,
+  "load_sft_base": false,
+  "find_unused": false,
+  "all_pass": false
+}

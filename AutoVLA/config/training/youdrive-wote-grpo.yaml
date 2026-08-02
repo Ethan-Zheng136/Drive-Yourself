@@ -1,0 +1,134 @@
+name: youdrive-wote-grpo
+description: Stage-2 GRPO of a DDv2-persona policy via the DE-MERGE (no-merge) path -- raw base +
+             FROZEN Stage-1 LoRA + TRAINABLE Stage-2 LoRA. Reward is safety-dominant (pdms:style=3:1).
+             KL reference = base+stage1 (stage2 disabled), computed on the same model (no separate ref).
+
+model:
+  use_cot: false
+  pretrained_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct
+  # STAGE 2 (DE-MERGE / no-merge default): RAW base ckpt (NOT persona_init). The composable
+  # path attaches Stage-1 as a FROZEN always-on LoRA on top of this raw base, then trains a
+  # fresh Stage-2 LoRA. De-merge needs the RAW base here so stage1 stacks correctly.
+  sft_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/AutoVLA/AutoVLA_PDMS_89.ckpt
+  # YouDrive composable / no-merge Stage-2 GRPO. Default null => legacy behavior:
+  #   init from the MERGED persona_init.ckpt (base+stage1 baked) and train a fresh adapter.
+  # When set to a Stage-1 LoRA adapter dir, switch to the DE-MERGE path: load the RAW base
+  #   (sft_model_path = raw base ckpt, e.g. AutoVLA_PDMS_89.ckpt), attach Stage-1 as a FROZEN
+  #   always-on adapter, and train a fresh Stage-2 adapter (built from model.lora below) on top.
+  #   KL reference = base+stage1 (Stage-2 disabled). Only the Stage-2 adapter is saved.
+  # NOTE: this config now DEFAULTS to de-merge ON (stage1_adapter_path is non-null).
+  stage1_adapter_path: /mnt/pfs/zhengguantian/autovla/persona/lora_ckpts/wote_big_l2_r64/lora_final
+  codebook_cache_path: "codebook_cache/agent_vocab.pkl"
+  train_vision_backbone: false
+  train_lm_backbone: true
+  lora:
+    # This block defines the TRAINABLE Stage-2 adapter (de-merge: built via add_adapter("stage2")
+    # in tools/run_rft.py). Bumped from r16/alpha32/attention-only to r32/alpha64/all-7-modules
+    # for more safety-learning headroom. Rank-agnostic additive stacking makes this safe to
+    # differ from the frozen Stage-1 adapter (which is r64/alpha128/7-modules).
+    use: true
+    task_type: CAUSAL_LM
+    target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    r: 32
+    alpha: 64
+    dropout: 0.05
+    bias: "none"
+  trajectory:
+    num_poses: 10
+    interval_length: 0.5
+    time_horizon: 5.0
+  tokens:
+    action_start_id: 151665
+    ignore_index: -100
+    assistant_id: [151644, 77091]
+  video:
+    min_pixels: 109760
+    max_pixels: 109760
+
+data:
+  train:
+    # DDv2 teacher targets (tokenized) -> the imitation CE backbone learns DDv2 style.
+    # (NOT nocot_navtrain12k, which is the original GT, not DDv2 style.)
+    json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_wote_teacher12k
+    sensor_data_path: /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+    metric_cache_path: /mnt/pfs/zhengguantian/autovla/exp/metric_cache_navtrain12k
+  val:
+    json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_wote_teacher12k
+    sensor_data_path: /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+    metric_cache_path: /mnt/pfs/zhengguantian/autovla/exp/metric_cache_navtest_v1
+
+training:
+  batch_size: 1
+  learning_rate: 0.00003    # raised 1e-5 -> 3e-5: prior run's policy barely moved (KL not binding)
+  epochs: 2
+  num_workers: 1
+  weight_decay: 0.01
+  devices: 8                 # overridden by LOCAL_WORLD_SIZE under multi-node torchrun
+  sample:
+    max_length: 2048
+    # Cap rollout decode length. A valid nocot completion is ~num_poses(10) action tokens + EOS,
+    # so 64 is a safe margin; prevents no-EOS rollouts wasting hundreds of tokens x group_size.
+    max_new_tokens: 64
+    temperature: 0.9
+    top_k: 0.0
+    top_p: 1.0
+
+rl:
+  # REAL per-prompt GRPO: draw K=group_size rollouts of the SAME scene and normalize the advantage
+  # WITHIN that group (local to each rank). Larger K = lower-variance baseline / better credit
+  # assignment (more decoding + K micro-batched policy forwards per step).
+  group_size: 8
+  # KL leash to the REFERENCE = persona_init (the SFT STYLED policy, via sft_model_path).
+  # This is KL-to-SFT, NOT KL-to-base: it (a) gives GRPO a trust region so the policy can't
+  # diverge / collapse PDMS, and (b) anchors to the styled policy so style is preserved.
+  # (KL-to-base was the one that killed style; that is still abandoned.)
+  kl_beta: 0.04
+  reference_model_path: null  # null => sft_model_path (= persona_init, the styled policy)
+  # Joint loss = ce_weight * CE(DDv2 target tokens)  +  pdms_weight * GRPO_policy_gradient(PDMS).
+  # CE is the MANDATORY style backbone (the original SFT train_loss); PDMS is the safety constraint only.
+  ce:
+    use: false               # STAGE 2: no CE (style is handled by the style REWARD on free rollouts)
+    weight: 0.1
+  reward:
+    sliding_window_size: 100
+    scale: 10
+    # R = pdms.weight * PDMS(safety)  +  style.weight * style_sim(DDv2 full profile)
+    pdms:
+      use: true
+      weight: 3.0            # safety-dominant (was 1.0): prior equal weight diluted the safety signal
+    style:
+      use: true              # DDv2 style reward, per token
+      # features: EXPLICIT LIST of style sub-metric keys (taken directly from the style cache) that
+      #   the similarity is scored over. STYLE is a ~1-D kinematic axis -- long/lat jerk discriminate
+      #   drivers, v_avg + ALL social/spacing do NOT; averaging the full profile diluted the signal
+      #   so base ~= teacher and GRPO collapsed style back to base. A short explicit list keeps it
+      #   sharp. Backward-compat string aliases 'full' (all cache feats) / 'kin5' still accepted.
+      features: [long_jerk, lat_jerk]
+      weight: 1.0            # pdms:style = 3:1  (IGNORED when constraint.use=true)
+      cache_path: /mnt/pfs/zhengguantian/autovla/persona/style_cache_wote_navtrain12k.pkl
+  # --- Lagrangian CONSTRAINED reward (REPLACES the additive pdms+style above when use=true) ---
+  # Objective: MAXIMIZE DDv2 style SUBJECT TO PDMS >= pdms_target (a hard safety FLOOR), so the
+  # optimizer cannot trade style away for safety -- style is the objective, safety is a barrier.
+  #   per-rollout reward:  r = style_sim  -  lambda * relu(pdms_target - pdms)
+  # lambda is a NON-trainable dual variable updated by DUAL ASCENT once per optimizer step from
+  # the all_gather'd GLOBAL mean PDMS (so every DDP rank computes the IDENTICAL lambda):
+  #   lambda <- clip( lambda + lambda_lr * (pdms_target - mean_batch_pdms), 0, lambda_max )
+  #   batch PDMS < target -> lambda grows (push safety harder); >= target -> lambda shrinks (style breathes).
+  # use=false => exact fall-back to the additive R = pdms.weight*PDMS + style.weight*style above
+  # (full backward compatibility with the de-merge run). Requires reward.pdms.use & reward.style.use.
+  constraint:
+    use: true
+    # PROVISIONAL: train-PDMS floor pending calibration (target ~0.88-0.90 on navtrain12k)
+    pdms_target: 0.85        # provisional; confirm/refine from early GRPO batch_pdms (navtrain PDMS)
+    lambda_init: 1.0
+    lambda_lr: 0.5
+    lambda_max: 50.0
+
+inference:
+  batch_size: 1
+  num_workers: 1
+  sample:
+    max_length: 2048
+    temperature: 0.01
+    top_k: 0.0
+    top_p: 1.0

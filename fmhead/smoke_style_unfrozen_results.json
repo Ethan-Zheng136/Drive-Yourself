@@ -1,0 +1,25 @@
+{
+  "A_lora_on": true,
+  "A_vlm_grad_params": 0,
+  "B_n_trainable": 11561991,
+  "B_constraint_mode": "kinematic",
+  "B_num_steps": 100,
+  "C_loss_finite": true,
+  "C_loss_init": 17.83487424850464,
+  "C_loss_last": 7.709921634197235,
+  "C_loss_decreasing": true,
+  "C_grad_reaches_head": true,
+  "C_grad_reaches_adapter": true,
+  "C_style_s_norm_mean": 157.37295150756836,
+  "D_traj_finite": true,
+  "D_max_jerk_mps3": 18.492740631103516,
+  "D_max_speed_mps": 11.398523330688477,
+  "D_within_v_cap": true,
+  "D_endpoint_xy": [
+    39.49,
+    16.61
+  ],
+  "E_adapter_only_trainable": 3014661,
+  "E_head_frozen": true,
+  "ALL_PASS": true
+}

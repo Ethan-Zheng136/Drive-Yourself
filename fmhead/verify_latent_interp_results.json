@@ -1,0 +1,29 @@
+{
+  "strict_load": {
+    "pass": true,
+    "note": "strict=True load OK (plain head, no adapter/z built)",
+    "adapter_built": false,
+    "z_built": false
+  },
+  "interp_a0_eq_base_a0_cond": {
+    "pass": true,
+    "max_abs_dctx": 0.0,
+    "max_abs_ds": 0.0,
+    "max_abs_dmask": 0.0
+  },
+  "interp_geometry": {
+    "pass": true,
+    "s_all_zero": true,
+    "blend_worst_abs": 0.0,
+    "a1_vs_styled_abs": 0.00048828125,
+    "bf16_ulp": 0.00048828125
+  },
+  "base_styled_unchanged": {
+    "pass": true
+  },
+  "decode_a0_eq_base": {
+    "pass": true,
+    "max_abs_dpose": 0.0
+  },
+  "all_pass": true
+}

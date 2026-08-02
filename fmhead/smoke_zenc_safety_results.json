@@ -1,0 +1,18 @@
+{
+  "gold_strict_load": true,
+  "fm3kin_strict_load": true,
+  "zenc_off_byte_identical_keys": true,
+  "zenc_on_base_missing": 0,
+  "zenc_on_z_missing": 3,
+  "zenc_s0_max_delta": 0.0,
+  "zenc_on_load": true,
+  "content_source_default_styled": true,
+  "znorm_no_extra_gate": true,
+  "znorm_legacy_final_nonzero": true,
+  "znorm_final_zero_init": true,
+  "znorm_earlier_nonzero": true,
+  "znorm_init_bitexact_maxdelta": 0.0,
+  "znorm_base_missing": 0,
+  "znorm_ok": true,
+  "ALL_PASS": true
+}

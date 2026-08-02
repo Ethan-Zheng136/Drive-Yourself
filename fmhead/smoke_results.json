@@ -1,0 +1,73 @@
+{
+  "device": "cpu",
+  "test1_shape": {
+    "pass": true,
+    "out_shape": [
+      5,
+      10,
+      2
+    ]
+  },
+  "test2_multimodality": {
+    "pass": true,
+    "init_loss": 1.0374690234661101,
+    "final_loss": 0.3506931856274605,
+    "loss_ratio": 0.3380276207725408,
+    "cluster_centers_m": [
+      [
+        15.991999626159668,
+        3.5989999771118164
+      ],
+      [
+        15.996999740600586,
+        -4.164999961853027
+      ]
+    ],
+    "canon_ends_m": [
+      [
+        16.0,
+        4.0
+      ],
+      [
+        16.0,
+        -4.0
+      ]
+    ],
+    "center_to_canon_dist_m": [
+      0.4009999930858612,
+      0.16500000655651093
+    ],
+    "mode_fracs": [
+      0.609,
+      0.391
+    ],
+    "both_modes_covered": true
+  },
+  "test3_style": {
+    "pass": true,
+    "init_loss": 0.9135155260562897,
+    "final_loss": 0.26533918678760526,
+    "s_plus_frac_left": 1.0,
+    "s_minus_frac_right": 1.0,
+    "style_flip_rate": 1.0
+  },
+  "test4_cfg": {
+    "pass": true,
+    "frac_left_by_w": {
+      "0.0": 0.387,
+      "1.0": 1.0,
+      "2.0": 1.0,
+      "4.0": 1.0
+    },
+    "dist_to_consistent_m_by_w": {
+      "0.0": 4.799,
+      "1.0": 0.11,
+      "2.0": 0.114,
+      "4.0": 0.197
+    },
+    "frac_up": true,
+    "dist_down": true
+  },
+  "all_pass": true,
+  "wall_time_s": 478.3
+}

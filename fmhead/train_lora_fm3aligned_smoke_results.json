@@ -1,0 +1,17 @@
+{
+  "world_size": 1,
+  "ddp": false,
+  "lora_trainable": 148611072,
+  "lora_grad_elems": 252,
+  "base_grads_after": 0,
+  "head_grads_after": 0,
+  "loss_first": 10.88195695479711,
+  "loss_last": 10.88195695479711,
+  "all_finite": true,
+  "ddp_param_sync": true,
+  "reload_ok": true,
+  "ran_text_only": true,
+  "load_sft_base": false,
+  "ckpt": "/mnt/pfs/zhengguantian/autovla/persona/lora_fm3aligned_ddv2/2026-07-20_02-46-08_smoke/lora_final",
+  "all_pass": true
+}

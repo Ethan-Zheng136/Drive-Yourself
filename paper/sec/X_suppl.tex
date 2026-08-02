@@ -1,0 +1,49 @@
+\clearpage
+\setcounter{page}{1}
+\maketitlesupplementary
+
+\section{Inference-Time Cost}
+\label{sec:suppl:latency}
+YouDrive plans in two stages per frame: (i) flow-matching \emph{generation} of
+$N$ candidate trajectories using $K$ integration steps, and (ii)
+\emph{selection} of one candidate with a simulation-in-the-loop, PDM-style
+scorer that consumes only planning-time information (map, perception, agent
+forecasts). NAVSIM is not a real-time closed-loop benchmark and imposes no
+latency constraint; we nonetheless report per-frame latency for completeness and
+to characterize deployability.
+
+\begin{table}[h]
+    \centering
+    \small
+    \setlength{\tabcolsep}{5pt}
+    \begin{tabular}{lccc}
+        \toprule
+        stage & setting & latency (ms) & notes \\
+        \midrule
+        generation & $N{=}16$, $K{=}100$ & \TODO{} & ODE steps dominate \\
+        generation & $N{=}16$, $K{=}\,$\TODO{} & \TODO{} & few-step / distilled \\
+        selection  & $N{=}16$, pdm-select & \TODO{} & scales with $N$ \\
+        \midrule
+        total      & $N{=}16$, $K{=}100$ & \TODO{} & \\
+        \bottomrule
+    \end{tabular}
+    \caption{Per-frame inference latency on \TODO{GPU model}. The two controllable
+    levers are the number of flow-matching integration steps $K$ (generation)
+    and the number of candidates $N$ (generation and selection). Few-step
+    distillation is the primary lever for real-time deployment.}
+    \label{tab:latency}
+\end{table}
+
+\noindent\textbf{Measurement protocol.} \TODO{Timing is measured with a
+standalone micro-benchmark (no full evaluation run): warm up, then average over
+$M$ frames with CUDA synchronization; report mean$\pm$std. Generation and
+selection are timed separately.}
+
+\section{Full v1 PDMS Sweep}
+\label{sec:suppl:v1full}
+\TODO{Complete per-teacher and per-combo $\alpha$ sweep (the full master table).}
+
+\section{v2 EPDMS Details}
+\label{sec:suppl:v2}
+\TODO{Corrected single-stage EPDMS definition (excluding
+two\_frame\_extended\_comfort), human-GT calibration, and per-metric breakdown.}

@@ -1,0 +1,25 @@
+{
+  "ckpt": "/mnt/pfs/zhengguantian/autovla/persona/fmhead_sft_full/2026-07-14_15-49-24/fm_decoder.pt",
+  "n": 500,
+  "style_off": true,
+  "rows": [
+    {
+      "decoder": "fmhead_select",
+      "n": 500,
+      "ADE_m": 1.2712,
+      "FDE_m": 2.0585
+    },
+    {
+      "decoder": "fmhead_mean",
+      "n": 500,
+      "ADE_m": 1.0074,
+      "FDE_m": 2.0216
+    },
+    {
+      "decoder": "fmhead_oracle",
+      "n": 500,
+      "ADE_m": 0.587,
+      "FDE_m": 1.1901
+    }
+  ]
+}

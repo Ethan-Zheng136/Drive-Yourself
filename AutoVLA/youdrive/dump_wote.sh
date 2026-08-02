@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# WoTE full dump over 4049 styletest tokens, 8 GPUs -> compare_full/wote.json
+# Usage: bash dump_wote.sh   (override GPUs: GPUS="0 1 2 3" bash dump_wote.sh)
+set -uo pipefail
+GPUS=(${GPUS:-0 1 2 3 4 5 6 7}); N=${#GPUS[@]}
+cd /root/workspace/closed_loop/navsim_candidates_survey/repos/WoTE
+export PYTHONPATH=$PWD
+export NUPLAN_MAP_VERSION=nuplan-maps-v1.0
+export NUPLAN_MAPS_ROOT=/root/workspace/closed_loop/data/navsim/maps
+export OPENSCENE_DATA_ROOT=/root/workspace/closed_loop/data/navsim
+export TOKENS_PATH=/mnt/pfs/zhengguantian/autovla/compare/tokens_styletest.json
+export OUT_PATH=/mnt/pfs/zhengguantian/autovla/compare_full/wote.json
+export CKPT=/mnt/pfs/zhengguantian/wote/ckpt/benchmark-WoTE.ckpt
+PY=/root/workspace/miniconda3/envs/navsim/bin/python
+LOG=/root/workspace/closed_loop/navsim_candidates_survey/repos/AutoVLA/youdrive/dump_logs; mkdir -p "$LOG"
+pids=()
+for idx in "${!GPUS[@]}"; do
+  CUDA_VISIBLE_DEVICES=${GPUS[$idx]} SHARD_IDX=$idx NUM_SHARDS=$N \
+    "$PY" youdrive_dump_wote.py > "$LOG/wote_shard${idx}.log" 2>&1 &
+  pids+=($!); echo "wote shard $idx -> GPU ${GPUS[$idx]} (pid ${pids[-1]})"
+done
+for p in "${pids[@]}"; do wait "$p"; done
+MERGE=1 "$PY" youdrive_dump_wote.py
+echo "DONE wote -> /mnt/pfs/zhengguantian/autovla/compare_full/wote.json"

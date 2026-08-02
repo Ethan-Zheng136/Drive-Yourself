@@ -1,0 +1,95 @@
+# FMHead STYLE-INJECTION on the fm3-kin base, FM HEAD UNFROZEN (option "(1)": don't
+# over-freeze). Trainer = train_fmhead.py (frozen VLM+LoRA outside DDP; only the FMHead
+# decoder trains). Launcher = launch_8gpu.sh (CONFIG=this file).
+#
+# WHAT THIS IS (vs config/fmhead_style_ddv2.yaml, the OLD adapter-only style run):
+#   * OLD: freeze the loaded head, train ONLY a tiny zero-gated AdaLN style adapter
+#          (freeze_base_keep_style) -> gates stayed ~0.05, style weak/mis-aimed.
+#   * THIS: train the FM head's OWN DiT blocks + embedders + cross-attn + final layer
+#          TOGETHER with the style adapter (fmhead.unfreeze_head: true). VLM + persona
+#          LoRA stay FROZEN. This is the ONE change vs the old style run; dropout/loss
+#          are kept the SAME in spirit (no reconstruction-loss / no CFG -- DEFERRED).
+#
+# BASE = fm3-kin epoch 6 (smooth feasible KINEMATIC base, PDMS 0.915). CONTROL-SPACE:
+#   the head flows in (a_long, yaw_rate) and integrates a unicycle at decode -> feasible
+#   by construction. Uses the CONTROL normalizer + the SAME kinematic constraint the base
+#   was trained with (accel 5.0 / yawrate 1.0 / v 25 / dt 0.5 / light control-jerk 0.01,
+#   num_steps 100). CAVEAT: control-space REQUIRES the constraint block below AND the
+#   control normalizer -- both are wired here (train_fmhead.build_decoder now forwards
+#   fmhead.constraint to the head, mode:none for old xy configs -> byte-identical).
+#
+# STYLE SIGNAL = SAME as the old run: s = style_alpha*(h_styled - h_base), the DDv2 persona
+# LoRA weight-space delta (VLM + LoRA frozen). TARGET = the DDv2 TEACHER trajectory
+# (style_target=gt on nocot_ddv2_teacher12k; its gt_trajectory field IS the DDv2 teacher).
+
+autovla_config: training/youdrive-ddv2-persona-lora-big-l2
+
+# --- frozen pre-decoder stack: fm3-kin ep6 base VLM + DDv2 persona LoRA (style axis ON) ---
+load_sft_base: true
+# base_ckpt: the fm3-kin ep6 FULL-FT base VLM (control-space head init below matches it).
+base_ckpt: /mnt/pfs/zhengguantian/autovla/persona/fmhead_fm3_kin/2026-07-17_12-47-42/fullft_fm3_kin_ep6_base.ckpt
+lora_adapter_path: /mnt/pfs/zhengguantian/autovla/persona/lora_ckpts/ddv2_big_final/lora_final
+freeze_vlm: true
+style_mode: styled                  # style ON
+style_alpha: 1.0                    # train at full delta; sweep alpha at eval time
+c_reduce: mean
+
+# --- TARGET = DDv2 teacher trajectory (batch gt_trajectory IS the DDv2 teacher) ---
+style_target: gt
+dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher12k
+
+# --- head init = fm3-kin ep6 head (control-space, jointly trained with the base) ---
+init_fmhead_ckpt: /mnt/pfs/zhengguantian/autovla/persona/fmhead_fm3_kin/2026-07-17_12-47-42/fullft_fm3_kin_ep6_head.pt
+
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10
+  traj_dim: 2                        # (a_long, yaw_rate) control channels
+  # dropout/loss kept SAME as the old style config (fmhead_style_ddv2.yaml): 0.0.
+  style_dropout_prob: 0.0
+  num_samples: 16
+  num_steps: 100                     # match the fm3-kin base (100 Euler steps)
+  cfg_weight: 1.0
+  # keep the StyleFMHead AdaLN adapter (built), but ALSO unfreeze the head (option 1).
+  use_style_adapter: true
+  style_adapter_hidden: 256
+  style_adapter_mode: adaln
+  # --- THE ONE CHANGE vs the old style run: unfreeze the FM head ---
+  unfreeze_head: true                # train head DiT blocks + adapter together (VLM+LoRA frozen)
+
+  # --- fm3-kin kinematic unicycle constraint (MUST match the ep6 base's training) ---
+  constraint:
+    mode: kinematic                  # flow in control space, integrate unicycle -> xy+heading
+    accel_max: 5.0                   # m/s^2  |a_long| cap
+    yawrate_max: 1.0                 # rad/s  |yaw-rate| cap (28.6 deg/step; no acute kinks)
+    v_max: 25.0                      # m/s    speed clamp
+    dt: 0.5                          # s      integration step (== interval_length)
+    jerk_weight: 0.01                # light control-jerk (da/dt) smoothness (as in the base)
+    curv_weight: 0.0
+    smooth_t_min: 0.5
+
+# ---- CONTROL-space normalizer (built by build_ctrl_norm_stats.py; matches the ep6 head) ----
+normalizer_path: /root/workspace/fmhead/traj_norm_stats_ctrl.json
+
+train:
+  # LR: head+adapter finetune off a STRONG kinematic init. Old adapter-only used 5e-4;
+  # a full head is ~7.4M params (vs the tiny adapter) off a good init -> lower to 2e-4 to
+  # re-aim gently without wrecking the learned content/feasibility.
+  lr: 2.0e-4
+  weight_decay: 0.01
+  batch_size: 1
+  accumulate_grad_batches: 4
+  max_steps: 8000
+  warmup_steps: 100
+  grad_clip: 1.0
+  log_every: 20
+  ckpt_every: 1000
+  num_workers: 4
+  seed: 42
+
+# ---- output (PFS, NEW dir, distinct from GOLD & all existing runs) ----
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/fmhead_style_ddv2_fm3kin_unfrozen

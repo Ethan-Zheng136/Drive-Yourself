@@ -1,0 +1,54 @@
+# FMHead decoder-replacement training config.
+#
+# Reuses the frozen AutoVLA stack (base Qwen2.5-VL-3B bf16 + trained persona LoRA)
+# up to and INCLUDING the VLM; trains ONLY the FMHead decoder that replaces the
+# codebook/token decoder. Code stays under /root/workspace/fmhead/; large
+# checkpoints go to /mnt/pfs/zhengguantian/.
+
+# --- which AutoVLA config to reuse (data paths, model paths, tokens, video cfg) ---
+autovla_config: training/youdrive-ddv2-persona-lora-big-l2
+
+# --- the frozen pre-decoder stack ---
+# The persona LoRA defines the STYLE axis (styled = LoRA-on, base = disable_adapter).
+lora_adapter_path: /mnt/pfs/zhengguantian/autovla/persona/lora_ckpts/ddv2_big_final/lora_final
+# Load the AutoVLA SFT/PDMS base weights (sft_model_path from the autovla_config)
+# under the LoRA. Heavy (~7GB torch.load); the persona LoRA was trained on top of it,
+# so the REAL style delta wants it ON. Set false for a fast smoke (uses raw Qwen base).
+load_sft_base: true
+freeze_vlm: true          # train ONLY the FMHead "back part" (default per user constraint)
+style_alpha: 1.0          # s = style_alpha * (h_styled - h_base)
+c_reduce: mean            # action-region hidden pooling: "mean" over action tokens | "last"
+
+# --- FMHead hyperparameters (the trainable decoder) ---
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10             # AutoVLA num_poses
+  traj_dim: 2             # (x_forward, y_left); heading appended at decode
+  style_dropout_prob: 0.2 # classifier-free-guidance style dropout
+  num_samples: 16         # candidates drawn at inference
+  num_steps: 10           # Euler ODE steps
+  cfg_weight: 2.0         # guidance weight at sampling
+
+# --- normalizer fitted from real gt_trajectory (see traj_norm_stats.json) ---
+normalizer_path: /root/workspace/fmhead/traj_norm_stats.json
+
+# --- optimizer / schedule (FMHead params only) ---
+train:
+  lr: 1.0e-3
+  weight_decay: 0.01
+  batch_size: 1           # per-step scene; VLM forward dominates memory (frozen, no_grad)
+  accumulate_grad_batches: 4
+  max_steps: 20000
+  warmup_steps: 200
+  grad_clip: 1.0
+  log_every: 20
+  ckpt_every: 1000
+  num_workers: 4
+  seed: 42
+
+# --- checkpoints (PFS, NOT workspace) ---
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/fmhead_ckpts

@@ -1,0 +1,48 @@
+{
+  "_def": "percentile vs human; 50=human median; higher=more aggressive",
+  "human": {
+    "DAI": 50.0,
+    "PAI": 50.0,
+    "SAI": 50.0
+  },
+  "autovla": {
+    "DAI": 97.3,
+    "PAI": 49.6,
+    "SAI": 46.6
+  },
+  "diffusiondrive": {
+    "DAI": 93.1,
+    "PAI": 53.6,
+    "SAI": 43.2
+  },
+  "diffusiondrivev2": {
+    "DAI": 99.7,
+    "PAI": 44.8,
+    "SAI": 49.2
+  },
+  "transfuser": {
+    "DAI": 79.8,
+    "PAI": 56.4,
+    "SAI": 43.2
+  },
+  "gtrs": {
+    "DAI": 44.8,
+    "PAI": 54.0,
+    "SAI": 43.3
+  },
+  "hydra_mdp": {
+    "DAI": 45.7,
+    "PAI": 53.6,
+    "SAI": 44.3
+  },
+  "wote": {
+    "DAI": 83.8,
+    "PAI": 54.7,
+    "SAI": 38.9
+  },
+  "goalflow": {
+    "DAI": 99.6,
+    "PAI": 44.7,
+    "SAI": 43.8
+  }
+}

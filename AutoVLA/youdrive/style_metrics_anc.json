@@ -1,0 +1,518 @@
+{
+  "n_eval_tokens": 6,
+  "models": {
+    "AutoVLA": {
+      "F1_mean": 0.8266607063592925,
+      "F2_mean": 0.9607705825316227,
+      "coverage_hull": 0.016647783382928688
+    },
+    "DiffusionDrive": {
+      "F1_mean": 0.7729489473304761,
+      "F2_mean": 0.9514545176262365,
+      "coverage_hull": 0.023297279011917964
+    },
+    "DiffusionDriveV2": {
+      "F1_mean": 0.9990718962868524,
+      "F2_mean": 0.9437098584967488,
+      "coverage_hull": 0.0004720168042424288
+    },
+    "TransFuser": {
+      "F1_mean": 0.7271881469758066,
+      "F2_mean": 0.9353224061333001,
+      "coverage_hull": 0.02571818175015125
+    }
+  },
+  "human_ref": {
+    "F1_mean": 0.4403279381199061,
+    "F2_mean": 0.8393659984229473,
+    "coverage_hull": 0.03527806340033862
+  },
+  "cross_model_homogeneity": {
+    "mean_pairwise_style_dist": 0.17566108063725808,
+    "note": "0 = identical styles (homogeneous); ~1.4 max in unit F1-F2 square"
+  },
+  "top_elastic_scenarios": {
+    "side_ego_to_main": {
+      "elasticity": 0.2699348071720609,
+      "n": 60
+    },
+    "carpark_areas": {
+      "elasticity": 0.2578547035471805,
+      "n": 39
+    },
+    "lane_change": {
+      "elasticity": 0.22950277363676622,
+      "n": 54
+    },
+    "crosswalks": {
+      "elasticity": 0.21157268815765573,
+      "n": 241
+    },
+    "unprotected_intersections": {
+      "elasticity": 0.1950437360961853,
+      "n": 254
+    },
+    "countryside_road": {
+      "elasticity": 0.18378755374041986,
+      "n": 97
+    },
+    "side_to_main_ego": {
+      "elasticity": 0.1373549389789683,
+      "n": 97
+    },
+    "lane_following": {
+      "elasticity": 0.08467596436305287,
+      "n": 2345
+    }
+  },
+  "per_token": {
+    "AutoVLA": {
+      "7b00e131a2885ecf": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.7779673063255151,
+        "F2_pace": 0.9997867803837953,
+        "raw": {
+          "v_avg": 14.599983628781994,
+          "v_max": 14.762059234179528,
+          "peak_decel": 0.6541837457108066,
+          "peak_accel": 0.6541849706642537,
+          "jerk_rms": 1.552022743670842,
+          "lat_vmax": 1.2249598503112793,
+          "lat_amax": 0.4865102767944336,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "c0ea178930145138": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.7290689410092396,
+        "F2_pace": 0.999360341151386,
+        "raw": {
+          "v_avg": 14.515721821115974,
+          "v_max": 14.742856673226239,
+          "peak_decel": 0.50878243161754,
+          "peak_accel": 0.4191289895612442,
+          "jerk_rms": 0.9181812804285271,
+          "lat_vmax": 1.3930082321166992,
+          "lat_amax": 0.6449166536331177,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "0e15e43a4c725f49": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.7641791044776118,
+        "F2_pace": 0.9982942430703625,
+        "raw": {
+          "v_avg": 13.869314512032087,
+          "v_max": 14.106536837127184,
+          "peak_decel": 0.4777029005983664,
+          "peak_accel": 0.7310653062905033,
+          "jerk_rms": 1.123399873237921,
+          "lat_vmax": 1.2779731750488281,
+          "lat_amax": 0.6933872699737549,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "38f4eed7d2cb5cc0": {
+        "ctx": "countryside_road",
+        "anc": "C",
+        "F1_assert": 0.8865979381443299,
+        "F2_pace": 0.9896907216494846,
+        "raw": {
+          "v_avg": 12.93549664788632,
+          "v_max": 13.208389939759932,
+          "peak_decel": 0.3860706447952005,
+          "peak_accel": 0.4644059589693619,
+          "jerk_rms": 0.9035117758475244,
+          "lat_vmax": 0.42636799812316895,
+          "lat_amax": 0.5327746868133545,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "edf7281f49b9573d": {
+        "ctx": "countryside_road",
+        "anc": "C",
+        "F1_assert": 0.845360824742268,
+        "F2_pace": 0.8608247422680413,
+        "raw": {
+          "v_avg": 11.513494072675687,
+          "v_max": 11.650936987063089,
+          "peak_decel": 0.368162721866959,
+          "peak_accel": 0.32899915040630745,
+          "jerk_rms": 0.7958288266150398,
+          "lat_vmax": 0.6598193645477295,
+          "lat_amax": 0.3466012477874756,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "c1019bca7cd95123": {
+        "ctx": "lane_change",
+        "anc": "C",
+        "F1_assert": 0.95679012345679,
+        "F2_pace": 0.9166666666666667,
+        "raw": {
+          "v_avg": 9.77865421962905,
+          "v_max": 10.51494957372384,
+          "peak_decel": 0.7721447269408763,
+          "peak_accel": 1.1136398921454997,
+          "jerk_rms": 1.0568809507705896,
+          "lat_vmax": 0.9185229539871216,
+          "lat_amax": 0.7580878734588623,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      }
+    },
+    "DiffusionDrive": {
+      "7b00e131a2885ecf": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.7523809523809524,
+        "F2_pace": 0.9985074626865672,
+        "raw": {
+          "v_avg": 13.998145917381525,
+          "v_max": 14.363938226976341,
+          "peak_decel": 0.8398558955802571,
+          "peak_accel": 0.29252731538588606,
+          "jerk_rms": 1.2629445321648514,
+          "lat_vmax": 0.47453057765960693,
+          "lat_amax": 0.4282001256942749,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "c0ea178930145138": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.5756929637526652,
+        "F2_pace": 0.9991471215351813,
+        "raw": {
+          "v_avg": 14.122445857772691,
+          "v_max": 14.6195646910165,
+          "peak_decel": 0.6473855609328574,
+          "peak_accel": -0.13813085049842755,
+          "jerk_rms": 0.5793040734863851,
+          "lat_vmax": 1.0367872714996338,
+          "lat_amax": 0.5811247527599335,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "0e15e43a4c725f49": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.7593461265103056,
+        "F2_pace": 0.9974413646055438,
+        "raw": {
+          "v_avg": 13.477231649783342,
+          "v_max": 13.89020900378444,
+          "peak_decel": 1.1585491332794469,
+          "peak_accel": 0.08867083981465029,
+          "jerk_rms": 1.0779726376906797,
+          "lat_vmax": 1.107581377029419,
+          "lat_amax": 0.42204761505126953,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "38f4eed7d2cb5cc0": {
+        "ctx": "countryside_road",
+        "anc": "C",
+        "F1_assert": 0.8487972508591065,
+        "F2_pace": 0.9896907216494846,
+        "raw": {
+          "v_avg": 12.535917040814219,
+          "v_max": 12.933459482046848,
+          "peak_decel": 0.49275782076315267,
+          "peak_accel": 0.2507617568793883,
+          "jerk_rms": 0.914585875971221,
+          "lat_vmax": 0.3238687515258789,
+          "lat_amax": 0.24963998794555664,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "edf7281f49b9573d": {
+        "ctx": "countryside_road",
+        "anc": "C",
+        "F1_assert": 0.9175257731958762,
+        "F2_pace": 0.8350515463917525,
+        "raw": {
+          "v_avg": 11.397095457908986,
+          "v_max": 11.677015569407526,
+          "peak_decel": 0.6570411095342692,
+          "peak_accel": 0.40885341804849773,
+          "jerk_rms": 1.1306725579110817,
+          "lat_vmax": 0.49417436122894287,
+          "lat_amax": 0.397004634141922,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "c1019bca7cd95123": {
+        "ctx": "lane_change",
+        "anc": "C",
+        "F1_assert": 0.7839506172839505,
+        "F2_pace": 0.8888888888888888,
+        "raw": {
+          "v_avg": 8.907215142277192,
+          "v_max": 9.176720146060442,
+          "peak_decel": 0.3623846663263137,
+          "peak_accel": 0.8625124647197318,
+          "jerk_rms": 0.5297165414217344,
+          "lat_vmax": 0.7065688371658325,
+          "lat_amax": 0.3548496961593628,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      }
+    },
+    "DiffusionDriveV2": {
+      "7b00e131a2885ecf": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.998862828713575,
+        "F2_pace": 0.9906183368869936,
+        "raw": {
+          "v_avg": 12.141622645601984,
+          "v_max": 13.591801312314457,
+          "peak_decel": 6.123269585447144,
+          "peak_accel": 6.4623847099448,
+          "jerk_rms": 14.35605567300792,
+          "lat_vmax": 0.886772096157074,
+          "lat_amax": 2.3907273411750793,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "c0ea178930145138": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.9997157071783938,
+        "F2_pace": 0.9927505330490405,
+        "raw": {
+          "v_avg": 12.527657583062691,
+          "v_max": 16.340081780818956,
+          "peak_decel": 12.290733320281703,
+          "peak_accel": 10.844434004674962,
+          "jerk_rms": 30.787051631041912,
+          "lat_vmax": 1.3673088550567627,
+          "lat_amax": 1.9014201164245605,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "0e15e43a4c725f49": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.9992892679459843,
+        "F2_pace": 0.9927505330490405,
+        "raw": {
+          "v_avg": 12.537902336471145,
+          "v_max": 14.986847861626693,
+          "peak_decel": 11.669472661764413,
+          "peak_accel": 4.750004600470312,
+          "jerk_rms": 18.376636156788646,
+          "lat_vmax": 1.403504729270935,
+          "lat_amax": 2.4640352725982666,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "38f4eed7d2cb5cc0": {
+        "ctx": "countryside_road",
+        "anc": "C",
+        "F1_assert": 1.0,
+        "F2_pace": 0.9896907216494846,
+        "raw": {
+          "v_avg": 12.508242953767859,
+          "v_max": 15.317979541031708,
+          "peak_decel": 11.074041631913467,
+          "peak_accel": 7.99148927770667,
+          "jerk_rms": 18.46994814726808,
+          "lat_vmax": 0.8214750289916992,
+          "lat_amax": 2.198352098464966,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "edf7281f49b9573d": {
+        "ctx": "countryside_road",
+        "anc": "C",
+        "F1_assert": 0.9965635738831615,
+        "F2_pace": 0.9742268041237113,
+        "raw": {
+          "v_avg": 12.04809463867236,
+          "v_max": 12.88640553691404,
+          "peak_decel": 3.161053249758705,
+          "peak_accel": 2.042523038355551,
+          "jerk_rms": 6.043513227845076,
+          "lat_vmax": 0.6629782915115356,
+          "lat_amax": 0.7828071713447571,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "c1019bca7cd95123": {
+        "ctx": "lane_change",
+        "anc": "C",
+        "F1_assert": 1.0,
+        "F2_pace": 0.7222222222222222,
+        "raw": {
+          "v_avg": 7.031840556877254,
+          "v_max": 8.071683221923498,
+          "peak_decel": 2.5340511807111366,
+          "peak_accel": 2.027029374857065,
+          "jerk_rms": 4.740043559716557,
+          "lat_vmax": 0.6348610520362854,
+          "lat_amax": 0.750969409942627,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      }
+    },
+    "TransFuser": {
+      "7b00e131a2885ecf": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.6990760483297797,
+        "F2_pace": 0.9985074626865672,
+        "raw": {
+          "v_avg": 14.28943553795282,
+          "v_max": 14.598107817588112,
+          "peak_decel": 0.39668322568221726,
+          "peak_accel": 0.3744290500661869,
+          "jerk_rms": 0.7350679894230452,
+          "lat_vmax": 0.6347384452819824,
+          "lat_amax": 0.49346208572387695,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "c0ea178930145138": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.7039090262970861,
+        "F2_pace": 0.9991471215351813,
+        "raw": {
+          "v_avg": 14.402388360944943,
+          "v_max": 14.761989271162964,
+          "peak_decel": 0.49096829541931797,
+          "peak_accel": 0.2938899165237778,
+          "jerk_rms": 0.7947029063329512,
+          "lat_vmax": 1.0841171741485596,
+          "lat_amax": 0.6213185787200928,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "0e15e43a4c725f49": {
+        "ctx": "lane_following",
+        "anc": "A",
+        "F1_assert": 0.6932480454868514,
+        "F2_pace": 0.9974413646055438,
+        "raw": {
+          "v_avg": 13.579841691622772,
+          "v_max": 13.943624548939718,
+          "peak_decel": 0.5332797225511925,
+          "peak_accel": 0.22360390851755696,
+          "jerk_rms": 0.8027120544951708,
+          "lat_vmax": 0.77205491065979,
+          "lat_amax": 0.3876152038574219,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "38f4eed7d2cb5cc0": {
+        "ctx": "countryside_road",
+        "anc": "C",
+        "F1_assert": 0.7285223367697595,
+        "F2_pace": 0.9896907216494846,
+        "raw": {
+          "v_avg": 12.352982433826103,
+          "v_max": 12.819623664911814,
+          "peak_decel": 0.6537295061465045,
+          "peak_accel": 0.03128929527959201,
+          "jerk_rms": 0.7674595737538785,
+          "lat_vmax": 0.23194390535354614,
+          "lat_amax": 0.16082429885864258,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "edf7281f49b9573d": {
+        "ctx": "countryside_road",
+        "anc": "C",
+        "F1_assert": 0.6494845360824743,
+        "F2_pace": 0.7938144329896908,
+        "raw": {
+          "v_avg": 10.969623013174735,
+          "v_max": 11.274914554524663,
+          "peak_decel": 0.35370380662561374,
+          "peak_accel": 0.01618654173114109,
+          "jerk_rms": 0.38046619198256115,
+          "lat_vmax": 0.46658027172088623,
+          "lat_amax": 0.23147985339164734,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      },
+      "c1019bca7cd95123": {
+        "ctx": "lane_change",
+        "anc": "C",
+        "F1_assert": 0.8888888888888888,
+        "F2_pace": 0.8333333333333333,
+        "raw": {
+          "v_avg": 9.131549326212143,
+          "v_max": 9.533715025458877,
+          "peak_decel": 0.42718370682435847,
+          "peak_accel": 1.012353097972344,
+          "jerk_rms": 0.7515643308082053,
+          "lat_vmax": 0.15329775214195251,
+          "lat_amax": 0.2015080451965332,
+          "headway": NaN,
+          "lane_change": NaN
+        }
+      }
+    }
+  },
+  "human_per_token": {
+    "0e15e43a4c725f49": {
+      "F1_assert": 0.4553304904051172,
+      "F2_pace": 0.8301350390902629,
+      "anc": "A"
+    },
+    "38f4eed7d2cb5cc0": {
+      "F1_assert": 0.3118556701030928,
+      "F2_pace": 0.8556701030927835,
+      "anc": "C"
+    },
+    "7b00e131a2885ecf": {
+      "F1_assert": 0.39211087420042645,
+      "F2_pace": 0.7307746979388771,
+      "anc": "A"
+    },
+    "c0ea178930145138": {
+      "F1_assert": 0.3142857142857143,
+      "F2_pace": 0.8592750533049042,
+      "anc": "A"
+    },
+    "c1019bca7cd95123": {
+      "F1_assert": 0.8333333333333333,
+      "F2_pace": 0.9012345679012346,
+      "anc": "C"
+    },
+    "edf7281f49b9573d": {
+      "F1_assert": 0.33505154639175255,
+      "F2_pace": 0.8591065292096219,
+      "anc": "C"
+    }
+  }
+}

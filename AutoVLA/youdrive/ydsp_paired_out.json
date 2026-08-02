@@ -1,0 +1,58 @@
+{
+  "autovla": {
+    "DAI": 3.7,
+    "PAI": 0.972,
+    "SAI": 0.0,
+    "n_kin": 4049,
+    "n_env": 3159
+  },
+  "diffusiondrive": {
+    "DAI": 3.109,
+    "PAI": 1.068,
+    "SAI": -0.004,
+    "n_kin": 4049,
+    "n_env": 3027
+  },
+  "diffusiondrivev2": {
+    "DAI": 18.334,
+    "PAI": 2.147,
+    "SAI": 0.011,
+    "n_kin": 4049,
+    "n_env": 3037
+  },
+  "transfuser": {
+    "DAI": 1.661,
+    "PAI": 0.922,
+    "SAI": -0.004,
+    "n_kin": 4049,
+    "n_env": 3039
+  },
+  "gtrs": {
+    "DAI": 0.627,
+    "PAI": 0.741,
+    "SAI": -0.015,
+    "n_kin": 4049,
+    "n_env": 3017
+  },
+  "hydra_mdp": {
+    "DAI": 0.667,
+    "PAI": 0.79,
+    "SAI": -0.011,
+    "n_kin": 4049,
+    "n_env": 3023
+  },
+  "wote": {
+    "DAI": 2.299,
+    "PAI": 1.043,
+    "SAI": -0.024,
+    "n_kin": 4049,
+    "n_env": 3011
+  },
+  "goalflow": {
+    "DAI": 9.044,
+    "PAI": -0.121,
+    "SAI": 0.001,
+    "n_kin": 4040,
+    "n_env": 3033
+  }
+}

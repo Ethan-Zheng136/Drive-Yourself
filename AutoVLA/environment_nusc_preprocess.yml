@@ -1,0 +1,12 @@
+name: autovla_nusc_preprocess
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - numpy
+  - tqdm
+  - pip:
+    - nuscenes-devkit==1.1.11
+    - pyquaternion

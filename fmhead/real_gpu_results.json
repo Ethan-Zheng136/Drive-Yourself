@@ -1,0 +1,26 @@
+{
+  "device": "cuda",
+  "model_path": "/mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct",
+  "ran_real_vlm": true,
+  "c_shape": [
+    1,
+    2048
+  ],
+  "c_dtype": "torch.bfloat16",
+  "style_abs_mean": 0.303917795419693,
+  "poses_shape": [
+    1,
+    10,
+    3
+  ],
+  "overfit": {
+    "init_loss": 1.290350678563118,
+    "final_loss": 0.38047879841178656,
+    "end_L2_m": 0.20172221958637238
+  },
+  "style": {
+    "s_plus_frac_left": 1.0,
+    "s_minus_frac_right": 1.0
+  },
+  "all_pass": true
+}

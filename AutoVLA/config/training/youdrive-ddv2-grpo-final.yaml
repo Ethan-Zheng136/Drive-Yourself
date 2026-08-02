@@ -1,0 +1,105 @@
+name: youdrive-ddv2-grpo-final
+description: FINAL Stage-2 GRPO of the DDv2-persona policy on the COMBINED navtrain12k + navtest
+             data, via the DE-MERGE (no-merge) path -- raw base + FROZEN Stage-1 LoRA
+             (ddv2_big_final) + TRAINABLE Stage-2 LoRA. This clone of youdrive-ddv2-grpo changes
+             ONLY these -- name, stage1_adapter_path (-> ddv2_big_final/lora_final), the data paths
+             (json_dataset_path -> nocot_ddv2_teacher_final, metric_cache_path -> the merged
+             metric_cache_final, sensor_data_path -> repo root for train+test camera resolution)
+             and the style cache_path (-> style_cache_ddv2_final.pkl).
+             REWARD/CONSTRAINT/KL ARE UNCHANGED from youdrive-ddv2-grpo (pdms floor 0.88, style on
+             [long_jerk,lat_jerk], kl_beta 0.04). The reward strategy is decided separately and is
+             adjustable here; this config only wires the combined data/paths.
+
+model:
+  use_cot: false
+  pretrained_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct
+  # STAGE 2 (DE-MERGE): RAW base ckpt; Stage-1 (ddv2_big_final) attaches as a FROZEN always-on LoRA.
+  sft_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/AutoVLA/AutoVLA_PDMS_89.ckpt
+  # Stage-1 adapter = the FINAL combined-data SFT (SAVE_DIR=lora_ckpts/ddv2_big_final -> lora_final).
+  stage1_adapter_path: /mnt/pfs/zhengguantian/autovla/persona/lora_ckpts/ddv2_big_final/lora_final
+  codebook_cache_path: "codebook_cache/agent_vocab.pkl"
+  train_vision_backbone: false
+  train_lm_backbone: true
+  lora:
+    # TRAINABLE Stage-2 adapter (de-merge: add_adapter("stage2")). Unchanged from youdrive-ddv2-grpo.
+    use: true
+    task_type: CAUSAL_LM
+    target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    r: 32
+    alpha: 64
+    dropout: 0.05
+    bias: "none"
+  trajectory:
+    num_poses: 10
+    interval_length: 0.5
+    time_horizon: 5.0
+  tokens:
+    action_start_id: 151665
+    ignore_index: -100
+    assistant_id: [151644, 77091]
+  video:
+    min_pixels: 109760
+    max_pixels: 109760
+
+data:
+  # COMBINED train+test. sensor_data_path = AutoVLA REPO ROOT so BOTH navtrain (absolute camera
+  # paths, prefix ignored) and navtest (repo-relative camera paths) resolve. metric_cache_path =
+  # the merged navtrain12k + navtest_v1 cache (single dir; loader reads one merged metadata csv).
+  train:
+    json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher_final
+    sensor_data_path: /root/workspace/closed_loop/navsim_candidates_survey/repos/AutoVLA
+    metric_cache_path: /mnt/pfs/zhengguantian/autovla/exp/metric_cache_final
+  val:
+    json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher_final
+    sensor_data_path: /root/workspace/closed_loop/navsim_candidates_survey/repos/AutoVLA
+    metric_cache_path: /mnt/pfs/zhengguantian/autovla/exp/metric_cache_final
+
+training:
+  batch_size: 1
+  learning_rate: 0.00003
+  epochs: 2
+  num_workers: 1
+  weight_decay: 0.01
+  devices: 8                 # overridden by LOCAL_WORLD_SIZE under multi-node torchrun
+  sample:
+    max_length: 2048
+    max_new_tokens: 64
+    temperature: 0.9
+    top_k: 0.0
+    top_p: 1.0
+
+rl:
+  # ===== REWARD / CONSTRAINT / KL: UNCHANGED from youdrive-ddv2-grpo (adjustable; strategy TBD). =====
+  group_size: 8
+  kl_beta: 0.04
+  reference_model_path: null  # null => sft_model_path (= persona_init, the styled policy)
+  ce:
+    use: false
+    weight: 0.1
+  reward:
+    sliding_window_size: 100
+    scale: 10
+    pdms:
+      use: true
+      weight: 3.0
+    style:
+      use: true
+      features: [long_jerk, lat_jerk]
+      weight: 1.0
+      # combined navtrain + navtest DDv2 style cache (union 'cache', norm recomputed over the union).
+      cache_path: /mnt/pfs/zhengguantian/autovla/persona/style_cache_ddv2_final.pkl
+  constraint:
+    use: true
+    pdms_target: 0.88        # UNCHANGED safety floor; recalibrate separately if the reward scheme changes.
+    lambda_init: 1.0
+    lambda_lr: 0.5
+    lambda_max: 50.0
+
+inference:
+  batch_size: 1
+  num_workers: 1
+  sample:
+    max_length: 2048
+    temperature: 0.01
+    top_k: 0.0
+    top_p: 1.0

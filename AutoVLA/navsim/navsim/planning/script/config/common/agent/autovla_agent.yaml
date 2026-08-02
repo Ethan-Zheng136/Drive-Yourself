@@ -1,0 +1,21 @@
+_target_: navsim.agents.autovla_agent.AutoVLAAgent
+_convert_: 'all'
+
+trajectory_sampling:
+  _target_: nuplan.planning.simulation.trajectory.trajectory_sampling.TrajectorySampling
+  _convert_: 'all'
+  time_horizon: 5
+  interval_length: 0.5
+
+lora_conf:
+  use_lora: null
+  task_type: CAUSAL_LM
+  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  r: 8
+  lora_alpha: 8
+  lora_dropout: 0.1
+  bias: "none"
+
+checkpoint_path: null
+sensor_data_path: null
+config_path: null

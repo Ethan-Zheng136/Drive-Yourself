@@ -1,0 +1,83 @@
+# fmhead-sft-full -- FAITHFUL replica of AutoVLA full-FT SFT (run_sft.py), but the
+# codebook/action-token CE decoder is REPLACED by the FMHead + flow-matching loss.
+#
+# "Complete training" contender: VLM LM-backbone (vlm.model + lm_head) AND the FMHead
+# are trained JOINTLY (gradients flow into the LM backbone). Vision tower frozen.
+# Style axis OFF (s=0, no persona LoRA). Human-GT navtrain target.
+#
+# Independent from any current run: new config, new output dir, new launcher.
+# Mirrors qwen2.5-vl-3B-mix-sft model/tokens/trajectory/video + training hparams.
+
+model:
+  use_cot: false
+  # absolute path to the local Qwen2.5-VL-3B weights (mix-sft used ./Qwen2.5-VL-3B-Instruct)
+  pretrained_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct
+  train_vision_backbone: false      # freeze vlm.visual
+  train_lm_backbone: true           # train vlm.model (+ lm_head) jointly with FMHead
+  codebook_cache_path: "codebook_cache/agent_vocab.pkl"   # loaded by ActionTokenizer (repo-relative)
+  # Optionally warm-start from the AutoVLA SFT/PDMS base (full ckpt). Null = raw Qwen init.
+  sft_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/AutoVLA/AutoVLA_PDMS_89.ckpt
+  trajectory:
+    num_poses: 10
+    interval_length: 0.5
+    time_horizon: 5.0
+  tokens:
+    action_start_id: 151665
+    ignore_index: -100
+    assistant_id: [151644, 77091]
+  video:
+    min_pixels: 109760
+    max_pixels: 109760
+
+# training hparams == qwen2.5-vl-3B-mix-sft
+training:
+  batch_size: 1
+  learning_rate: 2.0e-5
+  epochs: 10          # AutoVLA SFT used 5; bumped to 10 to avoid under-training (val_loss was still dropping at 5)
+  num_workers: 4
+  weight_decay: 0.01
+  lr_warmup_step: 500
+  lr_step_frequency: 2000
+  lr_step_gamma: 0.98
+  train_sample_size: null
+  accumulate_grad_batches: 4
+
+# HUMAN-GT navtrain, disjoint train/val split (see prepare_gt_split.py)
+data:
+  train:
+      json_dataset_path:
+        - /mnt/pfs/zhengguantian/autovla/persona/nocot_navtrain_gt_split/train
+      sensor_data_path:
+        - /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+  val:
+      json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_navtrain_gt_split/val
+      sensor_data_path: /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+
+inference:
+  batch_size: 1
+  num_workers: 2
+  sample:
+    max_length: 2048
+    temperature: 0.01
+    top_k: 0
+    top_p: 1.0
+
+# ---- FMHead decoder (replaces the codebook/CE decode) ----
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10
+  traj_dim: 2
+  style_dropout_prob: 0.0           # style axis OFF -> no CFG dropout
+  num_samples: 16
+  num_steps: 30                      # v2: 10 -> 30 Euler steps (GoalFlow uses 100)
+  cfg_weight: 1.0
+c_reduce: mean                      # action-region hidden pooling
+style_alpha: 0.0                    # s = 0 (content-only)
+normalizer_path: /root/workspace/fmhead/traj_norm_stats_gt.json
+
+# ---- output (PFS, distinct from all existing runs) ----
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/fmhead_sft_full

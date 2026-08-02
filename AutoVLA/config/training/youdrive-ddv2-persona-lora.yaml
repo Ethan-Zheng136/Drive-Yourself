@@ -1,0 +1,60 @@
+name: youdrive-ddv2-persona-lora
+description: Style-LoRA FT on AutoVLA imitating DiffusionDriveV2 trajectories (persona vector v_DDv2)
+
+model:
+  use_cot: false
+  pretrained_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct
+  sft_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/AutoVLA/AutoVLA_PDMS_89.ckpt   # base init
+  train_vision_backbone: false
+  train_lm_backbone: true                  # get_peft_model already freezes base; true=不让SFT再误冻LoRA
+  codebook_cache_path: "codebook_cache/agent_vocab.pkl"
+  lora:
+    use: true
+    task_type: CAUSAL_LM
+    target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+    r: 16
+    alpha: 32
+    dropout: 0.05
+    bias: none
+  trajectory:
+    num_poses: 10
+    interval_length: 0.5
+    time_horizon: 5.0
+  tokens:
+    action_start_id: 151665
+    ignore_index: -100
+    assistant_id: [151644, 77091]
+  video:
+    min_pixels: 109760
+    max_pixels: 109760
+
+training:
+  batch_size: 1
+  learning_rate: 1.0e-4
+  epochs: 3
+  num_workers: 4
+  weight_decay: 0.01
+  lr_warmup_step: 200
+  lr_step_frequency: 2000
+  lr_step_gamma: 0.98
+  train_sample_size: null      # null=全量11988; smoke 时我会临时改小
+  accumulate_grad_batches: 4
+
+data:
+  train:
+      json_dataset_path:
+        - /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher12k
+      sensor_data_path:
+        - /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+  val:
+      json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher12k
+      sensor_data_path: /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+
+inference:
+  batch_size: 1
+  num_workers: 2
+  sample:
+    max_length: 2048
+    temperature: 0.01
+    top_k: 0
+    top_p: 1.0

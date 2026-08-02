@@ -1,0 +1,76 @@
+name: youdrive-ddv2-persona-lora-big-final
+description: FINAL Stage-1 Style-LoRA SFT imitating DDv2 trajectories on the COMBINED navtrain12k +
+             navtest teacher data (nocot_ddv2_teacher_final, ~24k). Byte-for-byte the same recipe as
+             youdrive-ddv2-persona-lora-big-l2 (r=64, alpha=128, LoRA on attn+MLP, 6 epochs, CE +
+             w_l2*L2 auxiliary loss); ONLY the training data (train+test union) and the save dir
+             (SAVE_DIR=lora_ckpts/ddv2_big_final -> adapter at .../lora_final) differ. l2/lr/epochs
+             unchanged. Save dir is set via the SAVE_DIR env of run_sft_lora.py (no yaml field).
+
+model:
+  use_cot: false
+  pretrained_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct
+  sft_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/AutoVLA/AutoVLA_PDMS_89.ckpt   # base init
+  train_vision_backbone: false
+  train_lm_backbone: true
+  codebook_cache_path: "codebook_cache/agent_vocab.pkl"
+  lora:
+    use: true
+    task_type: CAUSAL_LM
+    # bigger capacity: attention + MLP (gate/up/down) instead of attention-only
+    target_modules: ["q_proj", "v_proj", "k_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    r: 64
+    alpha: 128
+    dropout: 0.05
+    bias: none
+  # === auxiliary L2 trajectory-regression loss (UNCHANGED from big-l2) ===
+  l2:
+    use: true
+    weight: 0.1
+    loss_type: mse
+  trajectory:
+    num_poses: 10
+    interval_length: 0.5
+    time_horizon: 5.0
+  tokens:
+    action_start_id: 151665
+    ignore_index: -100
+    assistant_id: [151644, 77091]
+  video:
+    min_pixels: 109760
+    max_pixels: 109760
+
+training:
+  batch_size: 1
+  learning_rate: 1.0e-4
+  epochs: 6
+  num_workers: 4
+  weight_decay: 0.01
+  lr_warmup_step: 200
+  lr_step_frequency: 2000
+  lr_step_gamma: 0.98
+  train_sample_size: null
+  accumulate_grad_batches: 4
+
+data:
+  # COMBINED train+test DDv2 teacher SFT set (symlink union of nocot_ddv2_teacher12k +
+  # nocot_ddv2_teacher_navtest). sensor_data_path is the AutoVLA REPO ROOT (not the trainval
+  # sensor dir): navtrain teacher JSONs embed ABSOLUTE camera paths (repo root is ignored via
+  # os.path.join), while navtest teacher JSONs embed camera paths RELATIVE to the repo root, so a
+  # single repo-root prefix resolves BOTH splits. (This is the one necessary deviation from big-l2.)
+  train:
+      json_dataset_path:
+        - /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher_final
+      sensor_data_path:
+        - /root/workspace/closed_loop/navsim_candidates_survey/repos/AutoVLA
+  val:
+      json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher_final
+      sensor_data_path: /root/workspace/closed_loop/navsim_candidates_survey/repos/AutoVLA
+
+inference:
+  batch_size: 1
+  num_workers: 2
+  sample:
+    max_length: 2048
+    temperature: 0.01
+    top_k: 0
+    top_p: 1.0

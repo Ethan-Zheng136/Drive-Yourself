@@ -1,0 +1,39 @@
+\section{Method}
+\label{sec:method}
+
+\subsection{Overview}
+\TODO{Pipeline figure: VLA backbone $\rightarrow$ style-conditioned
+flow-matching head $\rightarrow$ $N$ candidate trajectories $\rightarrow$
+deployable selector.}
+
+\subsection{Style as a Steerable Axis}
+\label{sec:method:style}
+We expose driving style through latent content interpolation over persona
+vectors. Given a base hidden state $h_{\text{base}}$ and a styled hidden state
+$h_{\text{styled}}$ produced by a persona LoRA adapter, we form
+\begin{equation}
+    c = h_{\text{base}} + \alpha \,\bigl(h_{\text{styled}} - h_{\text{base}}\bigr),
+    \label{eq:interp}
+\end{equation}
+where $\alpha \in [0,1]$ is the user-facing style knob and multiple persona
+vectors can be linearly combined with weights $w_i$ (\eg $0.6/0.4$).
+\TODO{Detail persona-vector construction from teacher planners; adapter
+training.}
+
+\subsection{Style-Conditioned Flow-Matching Planner}
+\label{sec:method:fm}
+\TODO{Flow-matching head over trajectory controls; $K$ integration steps; $N$
+candidates per frame; kinematic constraint decode.}
+
+\subsection{Deployable Selection}
+\label{sec:method:select}
+The generator emits $N=16$ candidates per frame; a deployable selector chooses
+one using only planning-time information (map, perception, agent forecasts) and
+\emph{no} ground-truth future ego trajectory. We use a
+simulation-in-the-loop scorer (PDM-style), which is a legitimate,
+inference-time selection strategy widely used on NAVSIM.
+We explicitly \emph{do not} report oracle selection (min-ADE to ground truth) or
+evaluation-metric selection as results; these are used only as diagnostic upper
+bounds on selection headroom (\cref{sec:exp:headroom}).
+\TODO{If a learned surrogate scorer is added for v2 (approximating EPDMS from
+inference-available signals), describe it here.}

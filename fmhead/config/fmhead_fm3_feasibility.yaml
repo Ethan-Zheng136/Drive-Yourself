@@ -1,0 +1,117 @@
+# fmhead_fm3_feasibility -- DRAFT (NOT launched). fm3 = the fm2 no-style feasibility
+# GOLD recipe (full-FT SFT: VLM LM-backbone + FMHead trained JOINTLY, vision frozen,
+# style axis OFF/s=0, human-GT navtrain, FMHead flow loss -- the recipe that produced
+# fullft_fm2_head_pdm0.9088.pt) PLUS a KINEMATIC-FEASIBILITY constraint and MORE epochs.
+#
+# Changes vs config/fmhead-sft-full.yaml (the GOLD recipe):
+#   * fmhead.param: kinematic          <- NEW: flow in (accel, yaw-rate) control space,
+#                                          integrate a unicycle -> feasible by construction
+#   * fmhead.jerk_weight / curv_weight <- NEW: soft smoothness penalty (option c)
+#   * fmhead.num_steps: 30 -> 100      <- option d (match GoalFlow; RK2 optional)
+#   * fmhead.integrator: rk2           <- NEW: midpoint integrator (option d)
+#   * training.epochs: 10 -> 15        <- user suggestion (~15ep)
+#   * normalizer_path -> control-space stats (built at code-change time)
+#   * ckpt_dir -> NEW PFS dir, distinct from GOLD and all existing runs
+#
+# GOLD SAFETY: new config + new ckpt_dir. This only WARM-STARTS from AutoVLA_PDMS_89.ckpt
+# (a base VLM, not a GOLD head). fmhead_GOLD/ is never touched.
+#
+# NOTE: the `param`, `jerk_weight`, `curv_weight`, `integrator` knobs require the fm_head.py /
+# fmhead_sft.py code changes described in fm3_design.md §6 BEFORE this config can run.
+
+model:
+  use_cot: false
+  pretrained_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct
+  train_vision_backbone: false       # freeze vlm.visual
+  train_lm_backbone: true            # train vlm.model (+ lm_head) jointly with FMHead
+  codebook_cache_path: "codebook_cache/agent_vocab.pkl"   # kept: used by the (b) residual anchor
+  sft_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/AutoVLA/AutoVLA_PDMS_89.ckpt  # base warm-start
+  trajectory:
+    num_poses: 10
+    interval_length: 0.5
+    time_horizon: 5.0
+  tokens:
+    action_start_id: 151665
+    ignore_index: -100
+    assistant_id: [151644, 77091]
+  video:
+    min_pixels: 109760
+    max_pixels: 109760
+
+# training hparams == qwen2.5-vl-3B-mix-sft, EXCEPT epochs 10 -> 15
+training:
+  batch_size: 1
+  learning_rate: 2.0e-5
+  epochs: 15                         # GOLD used 10 (best val epoch7); 15 for harder control target
+  num_workers: 4
+  weight_decay: 0.01
+  lr_warmup_step: 500
+  lr_step_frequency: 2000
+  lr_step_gamma: 0.98
+  train_sample_size: null
+  accumulate_grad_batches: 4
+
+# HUMAN-GT navtrain, disjoint train/val split (see prepare_gt_split.py) -- same as GOLD
+data:
+  train:
+      json_dataset_path:
+        - /mnt/pfs/zhengguantian/autovla/persona/nocot_navtrain_gt_split/train
+      sensor_data_path:
+        - /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+  val:
+      json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_navtrain_gt_split/val
+      sensor_data_path: /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+
+inference:
+  batch_size: 1
+  num_workers: 2
+  sample:
+    max_length: 2048
+    temperature: 0.01
+    top_k: 0
+    top_p: 1.0
+
+# ---- FMHead decoder (replaces the codebook/CE decode) + fm3 feasibility constraint ----
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10
+  traj_dim: 2                        # (a,omega) control channels in kinematic mode (still 2-D)
+  style_dropout_prob: 0.0            # style axis OFF -> no CFG dropout
+  num_samples: 16
+  num_steps: 100                     # option (d): 30 -> 100 Euler-equivalent steps (GoalFlow=100)
+  cfg_weight: 1.0
+
+  # --- fm3 feasibility knobs (NEW; require the fm_head.py code changes in §6) ---
+  param: kinematic                   # {xy | kinematic | residual}. PRIMARY = kinematic (option a).
+  integrator: rk2                    # {euler | rk2(midpoint/Heun)}; rk2 halves discretization error
+  # unicycle control bounds (feasible-by-construction caps)
+  accel_max: 4.0                     # m/s^2, a_t = accel_max * tanh(.)
+  yawrate_max: 0.5                   # rad/s, omega_t = yawrate_max * tanh(.)
+  v_max: 25.0                        # m/s speed clamp
+  v0_source: ego_status              # initial speed for integration: {ego_status | first_gt_step}
+  # option (c): soft smoothness regularizer on the clean-traj estimate x_hat1
+  jerk_weight: 0.03                  # lambda on mean((a_t - a_{t-1})^2)
+  curv_weight: 0.02                  # lambda on mean((psi_t - psi_{t-1})^2) i.e. curvature/yaw smoothness
+  smooth_t_min: 0.5                  # only apply the smoothness penalty for flow-time t > this (less noisy)
+
+  # --- FALLBACK (option b) anchored-residual variant; uncomment to switch ---
+  # param: residual
+  # anchor_source: codebook          # {codebook | const_curvature | kmeans}
+  # residual_scale: 3.0              # Delta = residual_scale * tanh(.) metres, bounded so it can't kink
+  # (with param: residual, keep traj_dim: 2 xy and the xy normalizer below)
+
+c_reduce: mean                       # action-region hidden pooling
+style_alpha: 0.0                     # s = 0 (content-only)
+
+# ---- normalizer ----
+# For param: kinematic -> control-space stats (a, omega), BUILT at code-change time from GT
+# (invert GT xy -> controls once). Placeholder path; create before launch.
+# For param: residual / xy -> reuse the xy stats traj_norm_stats_gt.json.
+normalizer_path: /root/workspace/fmhead/traj_norm_stats_ctrl.json
+
+# ---- output (PFS, NEW dir, distinct from GOLD & all existing runs) ----
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/fmhead_fm3_feasibility

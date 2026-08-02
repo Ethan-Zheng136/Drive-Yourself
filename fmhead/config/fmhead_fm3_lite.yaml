@@ -1,0 +1,101 @@
+# fmhead_fm3_lite -- VARIANT A ("fm3-lite"): the fm2 no-style feasibility GOLD full-FT
+# recipe (VLM LM-backbone + FMHead trained JOINTLY, vision frozen, style OFF/s=0,
+# human-GT navtrain, FMHead flow loss -- the recipe that produced
+# fullft_fm2_head_pdm0.9088.pt) PLUS a SOFT smoothness constraint and more epochs.
+#
+# Changes vs config/fmhead-sft-full.yaml (the GOLD recipe):
+#   * fmhead.constraint.mode: soft     <- NEW: xy flow + jerk/curvature penalty (option c)
+#   * fmhead.constraint.jerk_weight    <- SMALL (tunable "not too harsh")
+#   * fmhead.num_steps: 30 -> 100      <- option d (match GoalFlow)
+#   * training.epochs: 10 -> 15
+#   * ckpt_dir -> NEW PFS dir, distinct from GOLD and all existing runs
+#
+# The xy head is STRUCTURALLY UNCHANGED; only the training loss gains a soft penalty and
+# the decode stays xy. Normalizer = the xy stats (unchanged). mode:none would be
+# byte-identical to fm2 -> the GOLD 0.9088 head still loads/infers unchanged.
+
+model:
+  use_cot: false
+  pretrained_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct
+  train_vision_backbone: false       # freeze vlm.visual
+  train_lm_backbone: true            # train vlm.model (+ lm_head) jointly with FMHead
+  codebook_cache_path: "codebook_cache/agent_vocab.pkl"
+  sft_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/AutoVLA/AutoVLA_PDMS_89.ckpt  # base warm-start
+  trajectory:
+    num_poses: 10
+    interval_length: 0.5
+    time_horizon: 5.0
+  tokens:
+    action_start_id: 151665
+    ignore_index: -100
+    assistant_id: [151644, 77091]
+  video:
+    min_pixels: 109760
+    max_pixels: 109760
+
+# training hparams == qwen2.5-vl-3B-mix-sft, EXCEPT epochs 10 -> 15
+training:
+  batch_size: 1
+  learning_rate: 2.0e-5
+  epochs: 15
+  num_workers: 4
+  weight_decay: 0.01
+  lr_warmup_step: 500
+  lr_step_frequency: 2000
+  lr_step_gamma: 0.98
+  train_sample_size: null
+  accumulate_grad_batches: 4
+
+# HUMAN-GT navtrain, disjoint train/val split (see prepare_gt_split.py) -- same as GOLD
+data:
+  train:
+      json_dataset_path:
+        - /mnt/pfs/zhengguantian/autovla/persona/nocot_navtrain_gt_split/train
+      sensor_data_path:
+        - /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+  val:
+      json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_navtrain_gt_split/val
+      sensor_data_path: /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+
+inference:
+  batch_size: 1
+  num_workers: 2
+  sample:
+    max_length: 2048
+    temperature: 0.01
+    top_k: 0
+    top_p: 1.0
+
+# ---- FMHead decoder (replaces the codebook/CE decode) + fm3-lite soft constraint ----
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10
+  traj_dim: 2                        # xy (structurally unchanged from fm2)
+  style_dropout_prob: 0.0            # style axis OFF -> no CFG dropout
+  num_samples: 16
+  num_steps: 100                     # option (d): 30 -> 100 Euler steps (GoalFlow=100)
+  cfg_weight: 1.0
+
+  # --- fm3-lite (variant A) soft-feasibility constraint (ADDITIVE) ---
+  # Penalty = t-weighted L1 on the jerk (m/s^3) & heading-rate (rad/s) of the one-step clean
+  # estimate x_hat1 (see fm_head.flow_matching_loss). SMOKE sweep (tiny overfit, baseline
+  # long_jerk 2.23): jw=0.05 -> 0.72 (-68%); jw>=0.2 over-regularizes (U-shaped soft bias).
+  # Start SMALL (0.01-0.05) and tune up only if jerk is still high AND ADE has headroom.
+  constraint:
+    mode: soft                       # {none | soft | kinematic}; soft = xy flow + smoothness
+    jerk_weight: 0.05                # SMALL lambda on jerk (m/s^3); smoke-proven -68%, tunable
+    curv_weight: 0.02                # SMALL lambda on heading-rate (rad/s)
+    smooth_t_min: 0.5                # zero the penalty for noisy small-t x_hat1 (t <= 0.5)
+
+c_reduce: mean
+style_alpha: 0.0                     # s = 0 (content-only)
+
+# ---- normalizer (xy stats, UNCHANGED from fm2) ----
+normalizer_path: /root/workspace/fmhead/traj_norm_stats_gt.json
+
+# ---- output (PFS, NEW dir, distinct from GOLD & all existing runs) ----
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/fmhead_fm3_lite

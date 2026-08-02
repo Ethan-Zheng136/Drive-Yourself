@@ -1,0 +1,90 @@
+# fm3-aligned persona LoRA -- DDv2.  NEW RECIPE (train_lora_fm3aligned.py).
+#
+# Distill the DDv2 teacher into a FRESH persona LoRA THROUGH the FROZEN fm3-kin ep6 decoder,
+# so the LoRA's activation delta is aligned to the fm3-kin CONTROL space (a_long, yaw_rate)
+# -- NOT the old codebook regime. FLIP of the head-training recipe:
+#   * TRAINABLE : a fresh persona LoRA (r=64/alpha=128, attn+MLP) -- matches
+#                 youdrive-ddv2-persona-lora-big-l2's LoRA config (via autovla_config below).
+#   * FROZEN    : the fm3-kin ep6 head (control-space) AND the fm3-kin ep6 base VLM.
+#   * FORWARD   : VLM+LoRA -> styled content c (multi-token cross-attn ctx); frozen head
+#                 predicts the control-space velocity field on c; AdaLN style s=0 (no
+#                 z-encoder / no CFG).
+#   * LOSS      : fm3-kin CONTROL-space rectified flow-matching MSE (kinematic mode); target =
+#                 the DDv2 teacher trajectory inverted to controls + z-scored with the CONTROL
+#                 normalizer. grad -> LoRA only.
+#
+# ADDITIVE / config-gated (train_lora_only: true). GOLD 0.9088 head, fm3-kin ep6 base+head,
+# fm2/fm3 arch, and every existing training mode load/behave UNCHANGED.
+
+train_lora_only: true                # <- gates the NEW entrypoint (required)
+
+# LoRA config lineage: r=64, alpha=128, attn+MLP, dropout=0.05 (from this config's model.lora).
+autovla_config: training/youdrive-ddv2-persona-lora-big-l2
+
+# --- FROZEN base VLM = fm3-kin ep6 base (LoRA is trained ON TOP; base gets 0 grad) ---
+load_sft_base: true
+base_ckpt: /mnt/pfs/zhengguantian/autovla/persona/fmhead_fm3_kin/2026-07-17_12-47-42/fullft_fm3_kin_ep6_base.ckpt
+# fresh LoRA (NOT warm-started from big_final): no lora_adapter_path -> built from the
+# autovla_config model.lora block by the trainer.
+lora_adapter_path: null
+freeze_vlm: true
+
+# --- content = LoRA-ON styled hidden; AdaLN style s=0 (no z-encoder, no CFG) ---
+content_source: styled
+style_mode: none
+style_alpha: 0.0
+c_reduce: mean
+
+# --- TARGET = DDv2 teacher trajectory (the teacher12k gt_trajectory IS the teacher) ---
+style_target: gt
+dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher12k
+
+# --- FROZEN fm3-kin ep6 head (control-space, jointly trained with the ep6 base) ---
+init_fmhead_ckpt: /mnt/pfs/zhengguantian/autovla/persona/fmhead_fm3_kin/2026-07-17_12-47-42/fullft_fm3_kin_ep6_head.pt
+
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10
+  traj_dim: 2                        # (a_long, yaw_rate) control channels
+  style_dropout_prob: 0.0            # AdaLN style OFF -> no CFG dropout
+  num_samples: 16
+  num_steps: 100                     # match the fm3-kin ep6 base (100 Euler steps)
+  cfg_weight: 1.0
+  # NO style path: plain FMHead, s=0 (exactly the ep6 head's conditioning).
+  use_z_encoder: false
+  use_style_adapter: false
+  unfreeze_head: false
+
+  # --- fm3-kin kinematic unicycle constraint (MUST match the ep6 base's training) ---
+  constraint:
+    mode: kinematic
+    accel_max: 5.0
+    yawrate_max: 1.0
+    v_max: 25.0
+    dt: 0.5
+    jerk_weight: 0.01                # light control-jerk smoothness (as in the ep6 base)
+    curv_weight: 0.0
+    smooth_t_min: 0.5
+
+# ---- CONTROL-space normalizer (matches the ep6 head) ----
+normalizer_path: /root/workspace/fmhead/traj_norm_stats_ctrl.json
+
+train:
+  lr: 1.0e-4                         # LoRA lr (matches the big-l2 lineage)
+  weight_decay: 0.01
+  batch_size: 1
+  accumulate_grad_batches: 4
+  max_steps: 9000                    # ~6 epochs @ 12k scenes / 8 GPUs (1500 micro-steps/epoch)
+  warmup_steps: 200
+  grad_clip: 1.0
+  log_every: 20
+  ckpt_every: 1500
+  num_workers: 4
+  seed: 42
+
+# ---- output (PFS, NEW dir, distinct from GOLD & all existing runs) ----
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/lora_fm3aligned_ddv2

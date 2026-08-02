@@ -1,0 +1,43 @@
+{
+  "1_c_consistency": {
+    "pass": true,
+    "old_cos": 0.5864,
+    "new_cos": 1.0
+  },
+  "5_agent_decode": {
+    "pass": true,
+    "poses_shape": [
+      1,
+      10,
+      3
+    ],
+    "heading_absmax": 3.085364580154419,
+    "end_xy": [
+      25.8,
+      -1.86
+    ]
+  },
+  "3_fullft_fp32": {
+    "pass": true,
+    "tag": "fp32",
+    "lm_grad": 434,
+    "fm_grad": 61,
+    "vision_grad_sum": 0.0,
+    "vision_trainable": 0,
+    "loss0": 0.9832714200019836,
+    "lossN": 0.7598274350166321,
+    "val": 0.8252129554748535
+  },
+  "3_fullft_bf16": {
+    "pass": true,
+    "tag": "bf16",
+    "lm_grad": 434,
+    "fm_grad": 61,
+    "vision_grad_sum": 0.0,
+    "vision_trainable": 0,
+    "loss0": 0.6958901286125183,
+    "lossN": 1.6216191053390503,
+    "val": 1.0548052787780762
+  },
+  "all_pass_local": true
+}

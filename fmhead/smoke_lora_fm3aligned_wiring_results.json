@@ -1,0 +1,10 @@
+{
+  "paths::fmhead_lora_fm3aligned_ddv2.yaml": true,
+  "paths::fmhead_lora_fm3aligned_goalflow.yaml": true,
+  "paths::fmhead_lora_fm3aligned_transfuser.yaml": true,
+  "head_frozen": true,
+  "loss_finite": true,
+  "grad_to_ctx": true,
+  "head_zero_grad": true,
+  "control_space_target": true
+}

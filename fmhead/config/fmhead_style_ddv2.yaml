@@ -1,0 +1,86 @@
+# FMHead STYLE-INJECTION config: v2 head, persona style axis ON (teacher = DDv2).
+#
+# Design (see fm_head_v2_notes.md / this task's report):
+#   * CONTENT: cross-attn context from the BASE VLM (LoRA disabled) -> scene/safety
+#     decoupled from style. (extract_c_s reads content from the base forward.)
+#   * STYLE: s = style_alpha * (styled_anchor - base_anchor), the DDv2 persona
+#     weight-space delta -> AdaLN (v2 routes s through AdaLN) + CFG via style-dropout.
+#   * TARGET: the DDv2 TEACHER trajectory (style-matched) so s actually controls the
+#     output; style-dropout (0.2) zeroes s on some steps for classifier-free guidance
+#     and to keep the s=0 (unconditional) behavior anchored. See open questions re:
+#     mixing human-GT(s=0) examples for a true human<->DDv2 dose-response.
+#   * INIT: warm-start from the strong full-FT v2 head so content is already learned.
+#
+# NOTE (base choice / open question): the DDv2 LoRA was trained on AutoVLA_PDMS_89, so the
+# style delta is only in-distribution on THAT base. Default base = PDMS_89 (config
+# sft_model_path). If you instead want the full-FT base's higher PDMS, a persona LoRA
+# retrained on the full-FT base is needed (future work) -- see report open questions.
+
+autovla_config: training/youdrive-ddv2-persona-lora-big-l2
+
+# --- frozen pre-decoder stack: base VLM + DDv2 persona LoRA (style axis ON) ---
+load_sft_base: true
+# base_ckpt: match the frozen head's content distribution. The full-FT v2 head (init below)
+# learned cross-attn on the FULL-FT base -> use it here so content is in-distribution. (Open
+# question: the DDv2 LoRA was trained on PDMS_89, so its delta is off-distribution on the
+# full-FT base; alternative is base=PDMS_89 + a frozen-base head init. See report.)
+base_ckpt: /mnt/pfs/zhengguantian/autovla/persona/fmhead_sft_full/2026-07-14_15-49-24/full_ft_base.ckpt
+lora_adapter_path: /mnt/pfs/zhengguantian/autovla/persona/lora_ckpts/ddv2_big_final/lora_final
+freeze_vlm: true
+style_mode: styled                  # style ON
+style_alpha: 1.0                    # train at full delta; sweep alpha at eval time
+c_reduce: mean
+
+# --- TARGET = DDv2 teacher trajectory. We train ON the DDv2 teacher set, whose
+#     gt_trajectory field IS the DDv2 teacher (verified: (10,3), differs from human by
+#     ~1.6 m mean-xy; 11988 tokens, 100% overlap with the human navtrain set). So the flow
+#     target = batch gt_trajectory = DDv2 (style_target=gt). No token-join needed: in the
+#     additive-FROZEN design the s=0 anchor is the FROZEN 0.91 head (already human-GT-trained
+#     and proven byte-identical), so only the DDv2 conditional target is needed to train the
+#     adapter. (The paired human GT lives at nocot_navtrain12k if a per-sample s0=human /
+#     s1=DDv2 mix is wanted later.) ---
+style_target: gt
+dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher12k
+
+# --- warm-start from the strong full-FT v2 head (content already learned) ---
+init_fmhead_ckpt: /mnt/pfs/zhengguantian/autovla/persona/fmhead_sft_full/2026-07-14_15-49-24/fm_decoder.pt
+
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10
+  traj_dim: 2
+  # CFG note: in this additive-FROZEN design the UNCONDITIONAL model is the frozen 0.91 head
+  # itself (adapter masked at s=0), so CFG at inference already works (uncond = frozen head,
+  # cond = frozen head + adapter). Training-time style-dropout would just MASK the adapter on
+  # those samples (no adapter gradient) -> wasted samples + noisy loss. So we set 0.0 for a
+  # clean first try. (Set >0 only if you want the adapter itself to also model an uncond.)
+  style_dropout_prob: 0.0
+  num_samples: 16
+  num_steps: 30
+  cfg_weight: 1.0                   # eval-time CFG weight swept separately
+  # OPT-IN zero-gated style adapter (Option A): freezes the loaded 0.91 head, trains ONLY
+  # the additive AdaLN style adapter. s=0 stays byte-identical to the 0.91 head.
+  use_style_adapter: true
+  style_adapter_hidden: 256
+  style_adapter_mode: adaln         # "adaln" (wired) | "cross_attn" (Option B hook, unwired)
+
+normalizer_path: /root/workspace/fmhead/traj_norm_stats_gt.json
+
+train:
+  lr: 5.0e-4                        # lower LR for a style finetune off a strong init
+  weight_decay: 0.01
+  batch_size: 1
+  accumulate_grad_batches: 4
+  max_steps: 8000
+  warmup_steps: 100
+  grad_clip: 1.0
+  log_every: 20
+  ckpt_every: 1000
+  num_workers: 4
+  seed: 42
+
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/fmhead_ckpts_style_ddv2

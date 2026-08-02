@@ -1,0 +1,1 @@
+python tools/run_rft.py --config training/qwen2.5-vl-3B-nuplan-grpo-cot

@@ -1,0 +1,18 @@
+{
+  "DDv2_teacher(z-run target)": {
+    "norm_E_tau2": 6.893231748913725,
+    "analytic_floor_E_tau2_plus1": 7.893231748913725,
+    "zoff_loss_cond_drop0": 8.356214319045344,
+    "zoff_loss_cond_drop0_std": 13.165773486824875,
+    "zoff_loss_drop02": 8.530296119550863,
+    "zoff_loss_drop02_std": 13.44979492354162
+  },
+  "human_GT_navtrain(norm-fit)": {
+    "norm_E_tau2": 1.133215829419593,
+    "analytic_floor_E_tau2_plus1": 2.1332158294195933,
+    "zoff_loss_cond_drop0": 2.1420262176543474,
+    "zoff_loss_cond_drop0_std": 3.2520864499445246,
+    "zoff_loss_drop02": 2.040817358220617,
+    "zoff_loss_drop02_std": 3.2019420582093536
+  }
+}

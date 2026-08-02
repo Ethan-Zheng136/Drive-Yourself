@@ -1,0 +1,96 @@
+name: youdrive-goalflow-grpo-huge
+description: Per-driver Stage-2 GRPO for the GoalFlow persona (de-merge). Constrained max GoalFlow
+             kinematic style (long_jerk + lat_jerk) subject to PDMS >= 0.80. PDMS uses real
+             metric-cache truth (universal); style uses GoalFlow's OWN teacher cache.
+
+model:
+  use_cot: false
+  pretrained_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/Qwen2.5-VL-3B-Instruct
+  sft_model_path: /mnt/pfs/zhengguantian/autovla/ckpts/AutoVLA/AutoVLA_PDMS_89.ckpt
+  stage1_adapter_path: /mnt/pfs/zhengguantian/autovla/persona/lora_ckpts/goalflow_huge_l2_r128/lora_final
+  codebook_cache_path: "codebook_cache/agent_vocab.pkl"
+  train_vision_backbone: false
+  train_lm_backbone: true
+  lora:
+    use: true
+    task_type: CAUSAL_LM
+    target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    r: 32
+    alpha: 64
+    dropout: 0.05
+    bias: "none"
+  trajectory:
+    num_poses: 10
+    interval_length: 0.5
+    time_horizon: 5.0
+  tokens:
+    action_start_id: 151665
+    ignore_index: -100
+    assistant_id: [151644, 77091]
+  video:
+    min_pixels: 109760
+    max_pixels: 109760
+
+data:
+  train:
+    json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_goalflow_teacher12k_fixed
+    sensor_data_path: /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+    metric_cache_path: /mnt/pfs/zhengguantian/autovla/exp/metric_cache_navtrain12k
+  val:
+    json_dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_goalflow_teacher12k_fixed
+    sensor_data_path: /root/workspace/closed_loop/data/navsim_train/sensor_blobs/trainval
+    metric_cache_path: /mnt/pfs/zhengguantian/autovla/exp/metric_cache_navtest_v1
+
+training:
+  batch_size: 1
+  learning_rate: 0.00003
+  epochs: 2
+  num_workers: 1
+  weight_decay: 0.01
+  devices: 8
+  sample:
+    max_length: 2048
+    # Cap rollout decode length. A valid nocot completion is ~num_poses(10) action tokens + EOS,
+    # so 64 is a safe margin; prevents no-EOS rollouts wasting hundreds of tokens x group_size.
+    max_new_tokens: 64
+    temperature: 0.9
+    top_k: 0.0
+    top_p: 1.0
+
+rl:
+  # REAL per-prompt GRPO: K=group_size rollouts of the SAME scene, advantage normalized WITHIN
+  # that group (local to each rank). Larger K = lower-variance baseline / better credit assignment.
+  group_size: 8
+  kl_beta: 0.04
+  reference_model_path: null
+  ce:
+    use: false
+    weight: 0.1
+  reward:
+    sliding_window_size: 100
+    scale: 10
+    pdms:
+      use: true
+      weight: 3.0
+    style:
+      use: true
+      # EXPLICIT LIST of style sub-metric keys (from the style cache). 'full'/'kin5' strings still accepted.
+      features: [long_jerk, lat_jerk]
+      weight: 1.0
+      cache_path: /mnt/pfs/zhengguantian/autovla/persona/style_cache_goalflow_navtrain12k.pkl
+  constraint:
+    use: true
+    # PROVISIONAL: train-PDMS floor pending calibration (target ~0.88-0.90 on navtrain12k)
+    pdms_target: 0.85        # per-driver floor: GoalFlow persona natural train-PDMS ~0.79 (uniform 0.88 made lambda climb to 24 + style sink to 0.55). 0.85 = reachable push, keeps lambda moderate.
+    lambda_init: 1.0
+    lambda_lr: 0.5
+    lambda_max: 50.0
+
+inference:
+  batch_size: 1
+  num_workers: 1
+  sample:
+    max_length: 2048
+    temperature: 0.01
+    top_k: 0.0
+    top_p: 1.0

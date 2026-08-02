@@ -1,0 +1,55 @@
+\section{Introduction}
+\label{sec:intro}
+
+End-to-end autonomous driving is trained on large trajectory corpora under
+objectives that favor a single consensus behavior. The resulting policy acts as
+one \emph{average driver}: the same deterministic driving style for every user
+and scene. Two failures follow at the level of measurable outcomes. First,
+planners with similar closed-loop safety scores can occupy very different
+regions of a multi-dimensional style profile---speed, acceleration, jerk,
+headway, and spacing---on the same scenarios (\cref{fig:teaser}). Optimizing
+safety alone therefore collapses diverse, user-relevant ways of driving into one
+interchangeable ``good enough'' bucket. Second, when several maneuvers are
+equally plausible, learning and decoding that average behavior tend to produce
+hesitant, between-mode trajectories instead of a clear commitment. Driving style
+is the dimension this paradigm eradicates: not a vague label, but a measurable,
+interpretable aspect of how motion is executed, which should vary with user
+preference while still respecting the scene.
+
+Much prior work on personalized or styled driving reports joint drops in
+closed-loop scores when stylistic behavior is emphasized. That pattern is
+widespread, but it does not by itself prove an inevitable trade-off between
+style and safety---especially when safety metrics already fail to distinguish
+behaviors that users would treat as different. What is missing is a formulation
+where style is an explicit, controllable axis rather than an afterthought
+entangled with scene understanding and a single-mode decoder.
+
+We aim to measure driving style on shared benchmarks, expose it as a
+user-steerable axis, and generate trajectories with a style-conditioned
+flow-matching (or diffusion-class) planner so that multi-modal scenes admit
+decisive, sample-based choices instead of token-level averaging.
+
+\paragraph{Contributions.}
+\begin{itemize}
+    \item We provide a multi-planner, human-anchored empirical map of driving
+    style and show that a typical end-to-end policy covers only a point on that
+    map.
+    \item We analyze the costs of the average-driver view, including
+    multi-modal compromise.
+    \item We present an initial axis-conditioned generative planning direction
+    built on a vision--language--action backbone, as a path toward personalized
+    driving without treating safety scores as a sufficient description of
+    behavior.
+\end{itemize}
+
+% Teaser placeholder: style map with iso-safety, different style regions.
+\begin{figure}[t]
+    \centering
+    \fbox{\parbox[c][3.2cm][c]{0.9\linewidth}{\centering\small
+    \TODO{Figure 1: human-anchored style map. Planners with similar
+    closed-loop safety occupy different style regions; a typical E2E policy is a
+    single point.}}}
+    \caption{Planners with similar closed-loop safety scores occupy very
+    different regions of a multi-dimensional style profile.}
+    \label{fig:teaser}
+\end{figure}

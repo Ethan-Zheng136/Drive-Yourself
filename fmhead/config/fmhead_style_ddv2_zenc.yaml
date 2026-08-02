@@ -1,0 +1,111 @@
+# FMHead CONDITIONAL STYLE PATH on the fm3-kin base -- Z-ENCODER + CFG, body LoRA-free.
+# Trainer = train_fmhead.py (frozen VLM+LoRA outside DDP; only the FMHead z-path trains).
+# Launcher = launch_8gpu.sh (CONFIG=this file). Output = a NEW PFS dir (nothing existing
+# is touched; GOLD 0.9088 head, fm3-kin ep6 base, fm2/fm3 arch, and the old StyleFMHead
+# adapter path all load/behave UNCHANGED because every knob below is ADDITIVE + config-gated).
+#
+# DESIGN (agreed):
+#   * content c = h_base (content_source: base) -> the cross-attn CONTENT comes from the
+#     LoRA-OFF (neutral) forward, so the body stays LoRA-free and alpha=0/z=null returns the
+#     clean neutral fm3-kin base. (Note: this trainer already extracted content from the base
+#     forward; setting it explicitly also makes the eval agent use base content.)
+#   * LoRA stays the style SOURCE: s = style_alpha*(h_styled - h_base) is the DDv2 persona
+#     task-vector (VLM + LoRA FROZEN). A learned z-encoder purifies/aligns/amplifies it:
+#     z = enc(alpha*delta) -> feeds the head's EXISTING AdaLN style path (s_proj). enc(0)=0
+#     exactly (bias-free + SiLU, no LayerNorm) so the alpha dose-response is monotonic and
+#     alpha=0 is neutral.
+#   * CFG: style_dropout_prob 0.2 (drop z->null during training); sweep cfg_weight (w) at
+#     eval: v = v_null + w*(v_style - v_null).
+#   * FREEZE: train_z_path_only -> train ONLY {z_encoder, s_proj}; FREEZE the DiT blocks /
+#     content / cross-attn / embedders / final / temporal_pos / null_style AND the VLM+LoRA.
+#     This is what prevents the "fire" (DDv2 aggression) from baking into the shared body.
+#
+# BASE = fm3-kin epoch 6 (smooth feasible KINEMATIC base, PDMS ~0.915). CONTROL-SPACE: the
+# head flows in (a_long, yaw_rate) and integrates a unicycle at decode -> feasible by
+# construction. Uses the CONTROL normalizer + the SAME kinematic constraint the ep6 base was
+# trained with (accel 5.0 / yawrate 1.0 / v 25 / dt 0.5 / light control-jerk 0.01, num_steps 100).
+
+autovla_config: training/youdrive-ddv2-persona-lora-big-l2
+
+# --- frozen pre-decoder stack: fm3-kin ep6 base VLM + DDv2 persona LoRA (style axis ON) ---
+load_sft_base: true
+base_ckpt: /mnt/pfs/zhengguantian/autovla/persona/fmhead_fm3_kin/2026-07-17_12-47-42/fullft_fm3_kin_ep6_base.ckpt
+lora_adapter_path: /mnt/pfs/zhengguantian/autovla/persona/lora_ckpts/ddv2_big_final/lora_final
+freeze_vlm: true
+style_mode: styled                  # style ON
+style_alpha: 1.0                    # train at full delta; sweep alpha at eval time
+c_reduce: mean
+
+# --- NEW: content from the LoRA-OFF (neutral) forward -> body stays LoRA-free ---
+content_source: base
+
+# --- TARGET = DDv2 teacher trajectory (batch gt_trajectory IS the DDv2 teacher) ---
+style_target: gt
+dataset_path: /mnt/pfs/zhengguantian/autovla/persona/nocot_ddv2_teacher12k
+
+# --- head init = fm3-kin ep6 head (control-space, jointly trained with the base) ---
+# strict=False tolerates the fresh z_encoder keys (absent in the ep6 ckpt -> stay init);
+# the assert in build_decoder guarantees ALL base head keys still load.
+init_fmhead_ckpt: /mnt/pfs/zhengguantian/autovla/persona/fmhead_fm3_kin/2026-07-17_12-47-42/fullft_fm3_kin_ep6_head.pt
+
+fmhead:
+  hidden_size: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  cond_hidden: 512
+  horizon: 10
+  traj_dim: 2                        # (a_long, yaw_rate) control channels
+  # --- CFG: drop z->null with prob 0.2 during training ---
+  style_dropout_prob: 0.2
+  num_samples: 16
+  num_steps: 100                     # match the fm3-kin base (100 Euler steps)
+  cfg_weight: 1.0                    # default decode w=1; sweep w at eval
+
+  # --- NEW: learned z-encoder is the style path (plain FMHead, NOT the old adapter) ---
+  use_z_encoder: true
+  z_encoder_dims: [512, 256]         # d_style(2048) -> 512 -> 256 -> d_style(2048)
+  use_style_adapter: false           # z-encoder replaces the zero-gated adapter here
+  unfreeze_head: false
+  # --- STABILITY FIXES (the 3 fixes that kill the 100-180 loss spikes of the prior run) ---
+  #   (2) zero-init z-encoder OUTPUT gate -> injected modulation EXACTLY 0 at init (forward ==
+  #       clean fm3-kin base, then grows smoothly -- restores the old adapter's zero-gate warm-up).
+  #   (1) L2-normalize delta to a UNIT DIRECTION before the MLP (tames ||delta||~=158) and apply
+  #       alpha as an EXTERNAL, monotonic output gain (outside the norm) -> bounded modulation.
+  z_norm_delta: true
+  # --- train ONLY z_encoder (incl. its zero-init out_gate); FREEZE s_proj + body + VLM+LoRA.
+  #     With the zero-init output this makes alpha=0/z=null BIT-EXACT the 0.915 fm3-kin base. ---
+  train_z_path_only: true
+
+  # --- fm3-kin kinematic unicycle constraint (MUST match the ep6 base's training) ---
+  constraint:
+    mode: kinematic                  # flow in control space, integrate unicycle -> xy+heading
+    accel_max: 5.0                   # m/s^2  |a_long| cap
+    yawrate_max: 1.0                 # rad/s  |yaw-rate| cap (28.6 deg/step; no acute kinks)
+    v_max: 25.0                      # m/s    speed clamp
+    dt: 0.5                          # s      integration step (== interval_length)
+    jerk_weight: 0.01                # light control-jerk (da/dt) smoothness (as in the base)
+    curv_weight: 0.0
+    smooth_t_min: 0.5
+
+# ---- CONTROL-space normalizer (built by build_ctrl_norm_stats.py; matches the ep6 head) ----
+normalizer_path: /root/workspace/fmhead/traj_norm_stats_ctrl.json
+
+train:
+  # (3) TRAINING HYGIENE (anti-spike): the prior run used lr 2e-4 / accum 4 and spiked to
+  #     100-180. Drop lr 2e-4 -> 5e-5 and raise the effective batch (accum 4 -> 16) so each
+  #     update averages over more scenes; keep grad_clip 1.0. z-path is tiny (z_encoder ~2.6M).
+  lr: 5.0e-5
+  weight_decay: 0.01
+  batch_size: 1
+  accumulate_grad_batches: 16
+  max_steps: 8000
+  warmup_steps: 100
+  grad_clip: 1.0
+  log_every: 20
+  ckpt_every: 1000
+  num_workers: 4
+  seed: 42
+
+# ---- output (PFS, NEW dir, distinct from GOLD & all existing runs) ----
+ckpt_dir: /mnt/pfs/zhengguantian/autovla/persona/fmhead_style_ddv2_zenc
