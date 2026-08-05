@@ -2,18 +2,59 @@
 \label{sec:related}
 
 \paragraph{End-to-end and VLA planning.}
-\TODO{E2E planners on nuPlan/NAVSIM; VLA backbones (AutoVLA, etc.); discrete
-action codebooks vs.\ continuous decoders.}
+End-to-end planners on nuPlan and NAVSIM map sensor inputs to a trajectory without
+a hand-built intermediate stack~\cite{transfuser,navsim}. A recent line replaces the
+perception-planning pipeline with vision-language-action backbones that reason over
+multi-view images, ego state, and a navigation command~\cite{autovla,qwenvl}.
+AutoVLA~\cite{autovla} decodes trajectories by selecting from a discrete action
+codebook. We keep the VLA as a scene encoder and replace the codebook with a
+continuous flow-matching decoder, which lets us both sample several maneuvers and
+control style in the content space.
 
-\paragraph{Personalized / stylized driving.}
-\TODO{Style-conditioned imitation, driver-profile modeling, and the commonly
-reported closed-loop score drop when style is emphasized; contrast with our
-explicit-axis formulation.}
+\paragraph{Personalized and stylized driving.}
+Work on personalized or stylized driving conditions imitation on a driver profile or
+a style label, and often reports that closed-loop scores drop when style is
+emphasized. A common first step, taken by recent style-aware benchmarks such as
+StyleDrive~\cite{styledrive}, is to discretize style into a few categories such as
+aggressive, normal, and conservative. Such labels are a useful starting point, but
+they tend to correlate with safety margins while separating weakly on measured
+kinematics, and a small, imbalanced label set carries limited information about how a
+vehicle is actually driven. We read the reported style-safety tension mainly as a
+consequence of two things: safety metrics that do not distinguish behaviors users
+would treat as different, and style being entangled with scene understanding inside a
+single-mode decoder. We therefore represent style as a continuous, multi-dimensional,
+scenario-normalized axis and provide a metric that reports where a policy sits on it.
 
 \paragraph{Generative planning.}
-\TODO{Diffusion / flow-matching planners, multi-modal trajectory generation,
-and sample-and-select decoding vs.\ single-mode regression.}
+DiffusionDrive~\cite{diffusiondrive} and GoalFlow~\cite{goalflow} generate several
+trajectory candidates and then select one. These planners condition on geometric
+bird's-eye or image-encoder features. We build on rectified flow~\cite{rectflow} and
+flow matching~\cite{flowmatching} with a conditioned DiT/AdaLN
+decoder~\cite{dit}, and we decode in a kinematically constrained control space for
+dynamic feasibility. Our main departure is the conditioning signal: the generator is
+driven by dense, language-grounded VLA content rather than a pooled perception
+feature, which is also the space in which we define style directions
+(\cref{sec:method:overview}).
+
+\paragraph{Trajectory scoring and selection.}
+Sample-and-select planners need a scorer. PDM-Closed~\cite{pdmclosed} scores
+proposals with a lightweight simulator, and learned scorers such as
+Hydra-MDP~\cite{hydramdp} and generalized trajectory scoring~\cite{gtrs,wote} distill
+simulation signals into a network. We adopt the sample-and-select view; because style
+is a property of the sampled set, our style results do not depend on which of these
+scorers is used.
+
+\paragraph{Style directions and adapters.}
+Representing a behavior as a direction in a model's parameter space connects to
+LoRA~\cite{lora} and to task arithmetic~\cite{taskvector}, where task vectors are
+weight increments that can be added, scaled, and combined. We distill each persona
+into such a low-rank increment and expose it as an interpolatable direction, so that a
+single coefficient and linear blends control style without retraining the backbone.
 
 \paragraph{Closed-loop metrics.}
-\TODO{NAVSIM PDMS (v1) and the extended EPDMS suite (v2): lane-keeping, reactive
-agents, extended comfort; what safety scores do and do not capture about style.}
+NAVSIM PDMS~\cite{navsim,pdmclosed} aggregates no-at-fault collision, drivable-area
+and direction compliance, ego progress, time-to-collision, and comfort; the extended
+EPDMS suite adds lane-keeping, extended comfort, and reactive agents. These scores
+capture safety and task completion well, but by construction they are largely
+invariant to the stylistic differences a user cares about, which is one of the gaps
+our metric is meant to fill.

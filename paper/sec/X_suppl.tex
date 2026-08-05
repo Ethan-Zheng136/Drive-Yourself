@@ -41,7 +41,16 @@ selection are timed separately.}
 
 \section{Full v1 PDMS Sweep}
 \label{sec:suppl:v1full}
-\TODO{Complete per-teacher and per-combo $\alpha$ sweep (the full master table).}
+\cref{tab:v1full_single,tab:v1full_combo} give the complete per-teacher and
+per-combo $\alpha$ sweep with all style sub-metrics (the full master table),
+each aggregated as the scenario-weighted mean over 8 \textsc{navtest} shards.
+They also include the weakly-separating dimensions omitted from the main text
+(\eg average speed $\bar v$ and VRU distance $d_{\mathrm{vru}}$, which vary by
+less than $10\%$ across all configurations and therefore carry little
+discriminative signal here), reported for completeness.
+
+\input{sec/gen_tab_v1_single}
+\input{sec/gen_tab_v1_combo}
 
 \section{v2 EPDMS Details}
 \label{sec:suppl:v2}

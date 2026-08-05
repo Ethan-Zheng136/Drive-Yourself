@@ -2,15 +2,30 @@
 \label{sec:exp}
 
 \subsection{Setup}
-\TODO{Backbone (AutoVLA, Qwen2.5-VL-3B), warm start, NAVSIM navtest split,
-metrics (PDMS v1; EPDMS v2), style sub-metrics (DAI/PAI/SAI), baselines.}
+\label{sec:exp:setup}
+We build on AutoVLA~\cite{autovla} (Qwen2.5-VL-3B~\cite{qwenvl}), warm-started from
+the released \texttt{AutoVLA\_PDMS\_89} checkpoint, and attach the flow-matching
+decoder of \cref{sec:method:fm}, integrated with $K$ steps and sampled $N{=}16$
+times per frame. Each persona adapter is distilled from a teacher planner:
+\texttt{gtrs}~\cite{gtrs}, \texttt{hydra\_mdp}~\cite{hydramdp}, \texttt{wote}~\cite{wote},
+\texttt{transfuser}~\cite{transfuser}, \texttt{goalflow}~\cite{goalflow}, and
+\texttt{ddv2}~\cite{diffusiondrive}, and is applied through \cref{eq:interp}. We
+evaluate on the NAVSIM~\cite{navsim} navtest split (about 12k scenarios, 8 shards)
+and report scenario-weighted PDMS (v1) and, for the extended suite, EPDMS (v2).
+Alongside safety we report the YDMS style axes, Dynamics (DAI), Proximity (PAI), and
+Social (SAI) alignment, each normalized so that the human driver sits at 50; the full
+set of axes and the raw kinematics are defined in \cref{sec:suppl:v1full}.
 
-\subsection{Main Results: Safety (NAVSIM v1 PDMS)}
+\subsection{Style and safety on navtest (v1)}
 \label{sec:exp:v1}
-\cref{tab:v1} reports closed-loop PDMS on navtest with pdm-select
-($N{=}16$), together with our style sub-metrics. Style can be steered across a
-wide range via $\alpha$ while PDMS stays strong; our best configuration reaches
-\textbf{0.954}.
+\Cref{tab:v1} reports PDMS on navtest together with the YDMS style axes, for the base
+policy, the six persona teachers at their best operating point, and three persona
+blends. As $\alpha$ varies, the style axes move over a wide range while PDMS stays
+high; the strongest configuration, a \texttt{ddv2}/\texttt{gtrs} blend, reaches
+0.954. The six teachers settle in distinct regions of the style axes, and the blends
+reach points that no single teacher attains, which is the behavior expected if
+personas act as composable directions. The set of teachers is not fixed: adding a
+persona only requires distilling one adapter, without retraining the backbone.
 
 \begin{table}[t]
     \centering
@@ -18,35 +33,41 @@ wide range via $\alpha$ while PDMS stays strong; our best configuration reaches
     \setlength{\tabcolsep}{4pt}
     \begin{tabular}{llcccc}
         \toprule
-        config & $\alpha$ & PDMS$\uparrow$ & DAI & PAI & SAI \\
+        config & $\alpha^{\star}$ & PDMS$\uparrow$ & DAI & PAI & SAI \\
         \midrule
         human anchor        & --  & --     & 50.0 & 50.0 & 50.0 \\
-        base (AutoVLA)      & --  & 0.912  & 48.2 & 45.9 & --   \\
+        base (AutoVLA)      & 0   & 0.912  & 97.6 & 48.2 & 45.9 \\
         \midrule
-        gtrs                & 0.5 & 0.923  & 60.4 & 50.5 & 60.3 \\
-        hydra\_mdp          & 0.5 & 0.923  & 59.0 & 50.7 & 58.9 \\
-        ddv2                & 0.75& 0.947  & 39.9 & 57.0 & 99.8 \\
+        \multicolumn{6}{l}{single persona teachers}\\
+        gtrs                & 0.5 & 0.923  & 90.9 & 60.4 & 50.5 \\
+        hydra\_mdp          & 0.5 & 0.923  & 92.0 & 59.0 & 50.7 \\
+        wote                & 0.5 & 0.919  & 95.2 & 57.0 & 50.5 \\
+        transfuser          & 0.5 & 0.916  & 93.0 & 58.3 & 50.0 \\
+        goalflow            & 1.0 & 0.935  & 99.8 & 42.1 & 53.7 \\
+        ddv2                & 0.75& 0.947  & 99.8 & 39.9 & 57.0 \\
         \midrule
-        ddv2+gtrs 60/40     & 1.0 & \textbf{0.954} & 40.7 & 57.5 & 99.8 \\
-        ddv2+hydra 60/40    & 1.0 & 0.952  & 41.0 & 58.1 & 99.8 \\
-        ddv2+goalflow 50/50 & 1.0 & 0.950  & 40.2 & 55.5 & 99.8 \\
+        \multicolumn{6}{l}{persona blends}\\
+        ddv2+gtrs 60/40     & 1.0 & \textbf{0.954} & 99.8 & 40.7 & 57.5 \\
+        ddv2+hydra 60/40    & 1.0 & 0.952  & 99.8 & 41.0 & 58.1 \\
+        ddv2+goalflow 50/50 & 1.0 & 0.950  & 99.8 & 40.2 & 55.5 \\
         \bottomrule
     \end{tabular}
-    \caption{NAVSIM v1 (navtest) PDMS with pdm-select, and YouDrive style
-    sub-metrics (DAI/PAI/SAI). Representative rows; full sweep in the appendix.
-    \TODO{finalize row selection and sub-metric columns}}
+    \caption{PDMS on NAVSIM navtest and the YDMS style axes (DAI/PAI/SAI). Each
+    teacher is shown at its best-PDMS operating point $\alpha^{\star}$; the full
+    per-$\alpha$ sweep for every teacher and blend is in
+    \cref{tab:v1full_single,tab:v1full_combo}. Style moves over a wide range while
+    PDMS stays high, and blends reach points no single teacher does.}
     \label{tab:v1}
 \end{table}
 
-\subsection{Safety under the Extended Suite (NAVSIM v2 EPDMS)}
+\subsection{Extended suite (v2 EPDMS)}
 \label{sec:exp:v2}
-We further evaluate under the NAVSIM~v2 extended metric suite (EPDMS), which
-adds lane-keeping and extended-comfort terms and reactive traffic agents.
-\cref{tab:v2} reports EPDMS and its decomposition.
-\TODO{PLACEHOLDER TABLE --- v2 numbers to be filled from a \emph{deployable}
-selector (pdm-select or a learned surrogate), NOT from the oracle/EPDMS-select
-ceiling of \cref{sec:exp:headroom}. Working assumption for scaffolding: v2
-reaches parity with the v1-level safety standard.}
+We also evaluate under the NAVSIM~v2 extended suite (EPDMS), which adds lane-keeping,
+extended comfort, and reactive traffic agents. \Cref{tab:v2} reports EPDMS with its
+decomposition and a human-driver reference on the same split.
+\TODO{Fill v2 numbers. Scaffolding assumption: v2 tracks the v1-level safety
+standard; the human reference calibrates the achievable range of the corrected
+single-stage EPDMS.}
 
 \begin{table}[t]
     \centering
@@ -56,30 +77,183 @@ reaches parity with the v1-level safety standard.}
         \toprule
         config & EPDMS$\uparrow$ & NC & DAC & LK & EC \\
         \midrule
-        human anchor  & \TODO{}$^{\ast}$ & -- & -- & -- & -- \\
-        base (ours)   & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
-        best styled   & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        human reference & \TODO{} & -- & -- & -- & -- \\
+        base (ours)     & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        best styled     & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
         \bottomrule
     \end{tabular}
-    \caption{NAVSIM v2 (navtest) EPDMS decomposition. \textbf{Placeholder};
-    numbers pending a deployable selector. $^{\ast}$human-GT calibrates the
-    achievable upper bound of the corrected single-stage EPDMS.}
+    \caption{NAVSIM v2 (navtest) EPDMS decomposition. Placeholder; numbers to be
+    filled.}
     \label{tab:v2}
 \end{table}
 
-\subsection{Selection Headroom (Diagnostic)}
-\label{sec:exp:headroom}
-To quantify how much of the v2 gap is attributable to \emph{selection} rather
-than \emph{generation}, we dump all $N$ candidates per frame and, offline,
-measure the per-candidate mean and the oracle ceiling (best-of-$N$ under the
-corrected single-stage EPDMS). We stress that the ceiling uses the evaluation
-metric to pick and is therefore an \emph{upper bound only}, not a reportable
-result; it motivates the deployable surrogate selector of
-\cref{sec:method:select}.
-\TODO{Insert headroom table: mean vs.\ ceiling per config; gap above current
-deployable baseline.}
+\subsection{Style is a systematic per-driver signal}
+\label{sec:exp:systematic}
+A style axis is only meaningful if style is a real, per-driver signal rather than
+scene noise. On a fixed set of tokens we collect per-driver trajectories for 16
+drivers (the human, external planners, and our base) and run a one-way variance
+decomposition of per-token kinematics with driver identity as the factor
+(\cref{tab:vardecomp}). Driver identity explains a mean $\eta^2$ of 0.27, up to 0.46
+for lateral jerk, with F-statistics above one thousand, so how a driver accelerates,
+brakes, and jerks is strongly driver-specific. The one exception is average speed
+($\eta^2{=}0.005$), which is set by the road and traffic; this is why average speed
+is a weak style coordinate on navtest. A coarse aggressive/normal/conservative label
+separates the same kinematics with $\eta^2 \le 0.09$~\cite{styledrive}, about four to
+five times weaker than per-driver identity. This supports treating style as a
+continuous, per-driver axis, and it is also part of why we regard the current YDMS as
+preliminary: some of its dimensions separate weakly and are reported for
+completeness rather than as discriminative signal.
 
-\subsection{Style Controllability and Multi-modal Commitment}
+\begin{table}[t]
+    \centering
+    \small
+    \setlength{\tabcolsep}{6pt}
+    \begin{tabular}{lccc}
+        \toprule
+        kinematic feature & $\eta^2$(driver)$\uparrow$ & ICC(1) & $F$ \\
+        \midrule
+        avg.\ speed        & 0.005 & 0.005 & 20 \\
+        peak accel         & 0.275 & 0.288 & 1631 \\
+        peak decel         & 0.287 & 0.300 & 1735 \\
+        long.\ jerk        & 0.445 & 0.461 & 3451 \\
+        lat.\ jerk         & 0.460 & 0.476 & 3663 \\
+        lat.\ accel (max)  & 0.167 & 0.176 & 862 \\
+        \midrule
+        mean               & 0.273 & 0.286 & -- \\
+        \bottomrule
+    \end{tabular}
+    \caption{Variance decomposition of per-token kinematics with driver identity as
+    the factor (16 drivers, common tokens). Control features are driver-dominated,
+    while average speed is scene-locked. A coarse three-way style label reaches only
+    $\eta^2 \le 0.09$ on the same features~\cite{styledrive}.}
+    \label{tab:vardecomp}
+\end{table}
+
+\subsection{Style controllability and multi-modal commitment}
 \label{sec:exp:style}
-\TODO{Style-map coverage vs.\ single-point E2E; commitment / mode-averaging
-analysis; qualitative trajectories across $\alpha$.}
+Sweeping $\alpha$ traces a continuous path through style space: the axes and the
+underlying kinematics move from the base point toward each teacher, so a single
+coefficient spans a range rather than switching between presets
+(\cref{tab:following}). Multi-modality is common enough to matter on navtest. Among
+scenes with sufficient driver coverage, about 7.4\% are laterally bimodal (left or
+right) and about 13.9\% are longitudinally bimodal (brake or go). In such scenes a
+single-mode regressor tends to return a path between the modes, whereas the sampling
+decoder draws distinct maneuvers and returns one, which is the mechanism that keeps a
+style expressible where averaging would remove it.
+\TODO{Add a qualitative multi-modal figure (candidate set and the returned
+trajectory) and the per-$\alpha$ numbers below.}
+
+\begin{table}[t]
+    \centering
+    \small
+    \setlength{\tabcolsep}{5pt}
+    \begin{tabular}{lccccc}
+        \toprule
+        $\alpha$ & PDMS$\uparrow$ & DAI & PAI & SAI & $L_2$ to teacher$\downarrow$ \\
+        \midrule
+        0.00 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        0.25 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        0.50 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        0.75 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        1.00 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Style following as $\alpha$ increases for one persona, drawn from the
+    full sweep (\cref{tab:v1full_single}). Placeholder rows; style approaches the
+    teacher while PDMS stays high.}
+    \label{tab:following}
+\end{table}
+
+\subsection{Do personas behave as task vectors?}
+\label{sec:exp:vector}
+The task-vector view of \cref{sec:method:style} predicts three properties, which we
+test directly. Linearity: as $\alpha$ increases the style axes should move
+monotonically and close to linearly toward the teacher; we fit this on the full
+$\alpha$ sweep and report the fit. Composition: a blend $\sum_i w_i \Delta_i$ should
+match the weighted sum of the single-persona style shifts; we compare the measured
+blend to that prediction. Negation: applying $-\alpha$ should move style in the
+opposite direction, for example from an aggressive persona toward a conservative one.
+\Cref{tab:vector} summarizes the three tests.
+\TODO{Fill the linearity fit (data available from the sweep), the composition error
+(available from the blends), and the negation result (short run).}
+
+\begin{table}[t]
+    \centering
+    \small
+    \setlength{\tabcolsep}{6pt}
+    \begin{tabular}{lcc}
+        \toprule
+        property & measurement & result \\
+        \midrule
+        linearity in $\alpha$   & $R^2$ of style vs.\ $\alpha$        & \TODO{} \\
+        additive composition    & error vs.\ weighted sum of shifts  & \TODO{} \\
+        negation                & style shift under $-\alpha$        & \TODO{} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Tests of the task-vector properties of a persona direction.
+    Placeholder; linearity and composition use existing sweep and blend data,
+    negation is a short additional run.}
+    \label{tab:vector}
+\end{table}
+
+\subsection{Ablations}
+\label{sec:exp:ablate}
+Following the component-wise style of PrismAD~\cite{prismad}, we isolate the parts of
+the method that the claims rest on. The conditioning ablation replaces VLA content
+with a geometric image or bird's-eye feature of matched capacity while holding the
+decoder fixed, testing whether the density claim of \cref{sec:method:overview} holds
+(\cref{tab:ablate_cond}). The personalization ablation compares the task-vector
+interpolation used above with an ensemble decoder, in which several flow-matching
+heads are trained jointly and a per-persona adapter selects among them at inference;
+this is a second realization of the same personalization idea and lets us ask which
+mechanism gives better style coverage at equal safety (\cref{tab:ablate_mech}). We
+also ablate the decoder itself against the discrete codebook of the backbone, and
+sweep the number of candidates $N$ and integration steps $K$.
+\TODO{Fill both ablation tables and the decoder and sampling sweeps.}
+
+\begin{table}[t]
+    \centering
+    \small
+    \setlength{\tabcolsep}{5pt}
+    \begin{tabular}{lccc}
+        \toprule
+        conditioning & language-grounded & PDMS$\uparrow$ & style range \\
+        \midrule
+        geometric image/BEV feature & no  & \TODO{} & \TODO{} \\
+        VLA content (ours)          & yes & \TODO{} & \TODO{} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Conditioning ablation. VLA content vs.\ a geometric feature of matched
+    capacity, decoder held fixed. Placeholder.}
+    \label{tab:ablate_cond}
+\end{table}
+
+\begin{table}[t]
+    \centering
+    \small
+    \setlength{\tabcolsep}{5pt}
+    \begin{tabular}{lccc}
+        \toprule
+        personalization & knob & PDMS$\uparrow$ & style range \\
+        \midrule
+        task-vector interpolation (ours) & $\alpha$        & \TODO{} & \TODO{} \\
+        ensemble decoder                 & head selection  & \TODO{} & \TODO{} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Personalization mechanism. A single decoder interpolated along persona
+    directions vs.\ an ensemble of decoders selected per persona. Placeholder.}
+    \label{tab:ablate_mech}
+\end{table}
+
+\subsection{Comparison with prior planners}
+\label{sec:exp:baselines}
+\TODO{Compare PDMS and EPDMS against representative planners (TransFuser,
+DiffusionDrive, GoalFlow, Hydra-MDP, GTRS) on the same split, and place each on the
+style axes to show that a fixed planner occupies a single region while YouDrive
+covers a range.}
+
+\subsection{Scenario-stratified analysis}
+\label{sec:exp:strat}
+\TODO{Stratify PDMS/EPDMS and the style axes by scenario type (free-flow,
+lane-change, longitudinal brake or go, and scenes with vulnerable road users) to show
+where style varies and where safety is invariant to it.}
