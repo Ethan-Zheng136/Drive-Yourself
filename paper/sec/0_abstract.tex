@@ -1,30 +1,30 @@
 \begin{abstract}
-End-to-end driving policies are trained to reproduce a single consensus behavior
-over large trajectory corpora, and the resulting planner behaves as one average
-driver: it drives the same way for every user and every scene. The gap this
-creates is not only about personalization. On the same scenarios, planners with
-comparable closed-loop safety can occupy very different regions of a
+End-to-end driving policies imitate a consensus of human trajectories, and the
+resulting planner behaves as a single average driver with no user-specific style
+control. This is not only a personalization gap: on identical scenarios, planners
+with comparable closed-loop safety occupy very different regions of a
 multi-dimensional behavioral profile, so optimizing safety alone leaves driving
-style unconstrained and largely unmeasured; and when several maneuvers are
-equally reasonable, a single-mode decoder tends to interpolate between them
-rather than commit to one.
+style unconstrained and largely unmeasured, and regression-style decoding tends to
+average equally plausible maneuvers rather than commit to one.
 
-We study driving style as a controllable quantity and present YouDrive, a
-personalized end-to-end framework built on a vision-language-action (VLA)
-backbone. YouDrive has three parts. A style metric, YDMS, first gates hard safety
-and task requirements and then scores behavior along interpretable,
-scenario-normalized style dimensions, so that style is assessed on its own terms
-rather than folded into a single safety number. A style axis represents each
-persona as a task vector, a low-rank weight edit distilled from a teacher
-planner, and exposes it in the VLA content space through one interpolation
-coefficient that scales and composes personas without retraining the backbone. A
-flow-matching decoder replaces the discrete action codebook of the backbone,
-samples several dynamically feasible candidates, and returns one, so that
-multi-modal scenes are resolved by commitment instead of averaging.
+We present YouDrive, a personalized end-to-end planner built on a
+vision-language-action (VLA) backbone. At its core, a flow-matching decoder
+replaces the backbone's discrete action codebook: it samples several dynamically
+feasible trajectories in a kinematic control space and commits to one, resolving
+equally plausible maneuvers by selection rather than by a non-committal,
+between-mode average that current safety scores do not penalize. On top of this
+decoder we expose driving style as a control axis: each persona is a low-rank
+weight-space edit\,---\,a task vector in the task-arithmetic sense\,---\,that we
+realize at inference as a direction in the VLA content space, so a single
+coefficient scales and composes personas without retraining the backbone. To
+measure style beyond a single safety number, YDMS gates hard safety and task
+requirements and then scores behavior along interpretable, scenario-normalized
+style dimensions.
 
-On NAVSIM navtest, YouDrive covers a wide and controllable range of driving
-styles while retaining strong closed-loop safety, reaching 0.954 PDMS, and we
-report a set of studies that includes persona blends and an ensemble-decoder
-variant of the same idea. We treat YDMS as a first step and analyze its current
-limitations openly. Code and the metric will be released.
+On NAVSIM navtest, driver identity explains far more of the behavioral variance
+than coarse style labels (mean $\eta^2 \approx 0.27$ vs.\ $\le 0.09$), and a
+single coefficient traces a monotone path across the style axes while closed-loop
+safety is retained, with the strongest configuration reaching 0.954 PDMS. We
+analyze where YDMS is discriminative and where it remains weak. Code and the
+metric will be released.
 \end{abstract}
