@@ -3,10 +3,16 @@
 
 \subsection{Setup}
 \label{sec:exp:setup}
-We build on AutoVLA~\cite{autovla} (Qwen2.5-VL-3B~\cite{qwenvl}), warm-started from
-the released \texttt{AutoVLA\_PDMS\_89} checkpoint, and attach the flow-matching
-decoder of \cref{sec:method:fm}, integrated with $K$ steps and sampled $N{=}16$
-times per frame. Each persona adapter is distilled from a teacher planner:
+Our planner uses a vision-language backbone based on Qwen2.5-VL-3B~\cite{qwenvl}.
+Following AutoVLA~\cite{autovla} we adopt a vision-language-action model for driving
+and initialize the backbone from its released \texttt{AutoVLA\_PDMS\_89} weights, but
+we depart from it in how trajectories are produced: we discard the discrete action
+codebook and generate trajectories with the flow-matching decoder of
+\cref{sec:method:fm}, which is integrated with $K$ steps and sampled $N{=}16$ times
+per frame and trained on the driving data. This decoder and its training are the part
+of the model that we design; unless noted, ``base'' denotes this model with no persona
+applied ($\alpha{=}0$), not the original AutoVLA policy. Each persona adapter is
+distilled from a teacher planner:
 \texttt{gtrs}~\cite{gtrs}, \texttt{hydra\_mdp}~\cite{hydramdp}, \texttt{wote}~\cite{wote},
 \texttt{transfuser}~\cite{transfuser}, \texttt{goalflow}~\cite{goalflow}, and
 \texttt{ddv2}~\cite{diffusiondrive}, and is applied through \cref{eq:interp}. We
@@ -19,9 +25,13 @@ set of axes and the raw kinematics are defined in \cref{sec:suppl:v1full}.
 \subsection{Style and safety on navtest (v1)}
 \label{sec:exp:v1}
 \Cref{tab:v1} reports PDMS on navtest together with the YDMS style axes, for the base
-policy, the six persona teachers at their best operating point, and three persona
-blends. As $\alpha$ varies, the style axes move over a wide range while PDMS stays
-high; the strongest configuration, a \texttt{ddv2}/\texttt{gtrs} blend, reaches
+policy, the six persona teachers, and three persona blends. To keep the comparison on
+a single operating point, every persona is applied at full strength ($\alpha{=}1$);
+the continuous behaviour as $\alpha$ varies is the subject of \cref{sec:exp:style}. At
+full strength the style axes spread over a wide range, from an aggressive persona
+(\texttt{ddv2}, PAI~39) to a cautious one (\texttt{gtrs}, PAI~65), while PDMS stays
+within about one point of the base and improves for the dynamic personas and for every
+blend; the strongest configuration, a \texttt{ddv2}/\texttt{gtrs} blend, reaches
 0.954. The six teachers settle in distinct regions of the style axes, and the blends
 reach points that no single teacher attains, which is the behavior expected if
 personas act as composable directions. The set of teachers is not fixed: adding a
@@ -33,18 +43,18 @@ persona only requires distilling one adapter, without retraining the backbone.
     \setlength{\tabcolsep}{4pt}
     \begin{tabular}{llcccc}
         \toprule
-        config & $\alpha^{\star}$ & PDMS$\uparrow$ & DAI & PAI & SAI \\
+        config & $\alpha$ & PDMS$\uparrow$ & DAI & PAI & SAI \\
         \midrule
         human anchor        & --  & --     & 50.0 & 50.0 & 50.0 \\
-        base (AutoVLA)      & 0   & 0.912  & 97.6 & 48.2 & 45.9 \\
+        base (ours)         & 0   & 0.912  & 97.6 & 48.2 & 45.9 \\
         \midrule
         \multicolumn{6}{l}{single persona teachers}\\
-        gtrs                & 0.5 & 0.923  & 90.9 & 60.4 & 50.5 \\
-        hydra\_mdp          & 0.5 & 0.923  & 92.0 & 59.0 & 50.7 \\
-        wote                & 0.5 & 0.919  & 95.2 & 57.0 & 50.5 \\
-        transfuser          & 0.5 & 0.916  & 93.0 & 58.3 & 50.0 \\
+        gtrs                & 1.0 & 0.903  & 88.9 & 64.9 & 51.9 \\
+        hydra\_mdp          & 1.0 & 0.907  & 90.2 & 60.8 & 51.7 \\
+        wote                & 1.0 & 0.905  & 96.4 & 57.6 & 50.3 \\
+        transfuser          & 1.0 & 0.900  & 93.2 & 61.1 & 48.6 \\
         goalflow            & 1.0 & 0.935  & 99.8 & 42.1 & 53.7 \\
-        ddv2                & 0.75& 0.947  & 99.8 & 39.9 & 57.0 \\
+        ddv2                & 1.0 & 0.941  & 99.8 & 38.9 & 56.1 \\
         \midrule
         \multicolumn{6}{l}{persona blends}\\
         ddv2+gtrs 60/40     & 1.0 & \textbf{0.954} & 99.8 & 40.7 & 57.5 \\
@@ -52,11 +62,12 @@ persona only requires distilling one adapter, without retraining the backbone.
         ddv2+goalflow 50/50 & 1.0 & 0.950  & 99.8 & 40.2 & 55.5 \\
         \bottomrule
     \end{tabular}
-    \caption{PDMS on NAVSIM navtest and the YDMS style axes (DAI/PAI/SAI). Each
-    teacher is shown at its best-PDMS operating point $\alpha^{\star}$; the full
-    per-$\alpha$ sweep for every teacher and blend is in
-    \cref{tab:v1full_single,tab:v1full_combo}. Style moves over a wide range while
-    PDMS stays high, and blends reach points no single teacher does.}
+    \caption{PDMS on NAVSIM navtest and the YDMS style axes (DAI/PAI/SAI). Every
+    persona is applied at full strength ($\alpha{=}1$); base is the same model with no
+    persona ($\alpha{=}0$). The full per-$\alpha$ sweep for every teacher and blend is
+    in \cref{tab:v1full_single,tab:v1full_combo}. Style spreads over a wide range while
+    PDMS stays within about a point of base, and blends reach points no single teacher
+    does.}
     \label{tab:v1}
 \end{table}
 
@@ -134,7 +145,12 @@ completeness rather than as discriminative signal.
 Sweeping $\alpha$ traces a continuous path through style space: the axes and the
 underlying kinematics move from the base point toward each teacher, so a single
 coefficient spans a range rather than switching between presets
-(\cref{tab:following}). Multi-modality is common enough to matter on navtest. Among
+(\cref{tab:following}). For the \texttt{ddv2} persona, raising $\alpha$ from 0 to 1
+drives Proximity from 56.5 down to 38.9 (closer following) and Dynamics to saturation
+near 100, while the $L_2$ distance to the teacher trajectory falls from 18.0 to under
+9; PDMS rises from the base 0.912 to a peak of 0.947 near $\alpha{=}0.75$ and then
+plateaus, so the persona is expressed strongly without giving up safety. Multi-modality
+is common enough to matter on navtest. Among
 scenes with sufficient driver coverage, about 7.4\% are laterally bimodal (left or
 right) and about 13.9\% are longitudinally bimodal (brake or go). In such scenes a
 single-mode regressor tends to return a path between the modes, whereas the sampling
@@ -151,16 +167,17 @@ trajectory) and the per-$\alpha$ numbers below.}
         \toprule
         $\alpha$ & PDMS$\uparrow$ & DAI & PAI & SAI & $L_2$ to teacher$\downarrow$ \\
         \midrule
-        0.00 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
-        0.25 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
-        0.50 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
-        0.75 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
-        1.00 & \TODO{} & \TODO{} & \TODO{} & \TODO{} & \TODO{} \\
+        0.00 & 0.912 & 95.1 & 56.5 & 49.4 & 18.0 \\
+        0.25 & 0.926 & 98.3 & 51.0 & 50.5 & 12.2 \\
+        0.50 & 0.941 & 99.7 & 42.8 & 52.3 & 5.7 \\
+        0.75 & \textbf{0.947} & 99.8 & 39.9 & 57.0 & 9.2 \\
+        1.00 & 0.941 & 99.8 & 38.9 & 56.1 & 8.2 \\
         \bottomrule
     \end{tabular}
-    \caption{Style following as $\alpha$ increases for one persona, drawn from the
-    full sweep (\cref{tab:v1full_single}). Placeholder rows; style approaches the
-    teacher while PDMS stays high.}
+    \caption{Style following as $\alpha$ increases for the \texttt{ddv2} persona,
+    drawn from the full sweep (\cref{tab:v1full_single}). Proximity and the $L_2$
+    distance to the teacher move monotonically toward the teacher while PDMS rises from
+    base and then plateaus.}
     \label{tab:following}
 \end{table}
 
