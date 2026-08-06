@@ -3,16 +3,23 @@
 
 \subsection{Setup}
 \label{sec:exp:setup}
-Our planner uses a vision-language backbone based on Qwen2.5-VL-3B~\cite{qwenvl}.
-Following AutoVLA~\cite{autovla} we adopt a vision-language-action model for driving
-and initialize the backbone from its released \texttt{AutoVLA\_PDMS\_89} weights, but
-we depart from it in how trajectories are produced: we discard the discrete action
-codebook and generate trajectories with the flow-matching decoder of
-\cref{sec:method:fm}, which is integrated with $K$ steps and sampled $N{=}16$ times
-per frame and trained on the driving data. This decoder and its training are the part
-of the model that we design; unless noted, ``base'' denotes this model with no persona
-applied ($\alpha{=}0$), not the original AutoVLA policy. Each persona adapter is
-distilled from a teacher planner:
+\paragraph{Backbone and training.}
+Our planner uses the Qwen2.5-VL-3B~\cite{qwenvl} vision-language model as its scene
+encoder. Multi-view camera images, the ego status, and the navigation command are
+tokenized and encoded into a sequence of content tokens that summarize both the scene
+and the requested maneuver. This encoder and its warm-start follow
+AutoVLA~\cite{autovla}, but the trajectory pathway is different. AutoVLA decodes a
+trajectory autoregressively by emitting tokens from a 2048-entry action codebook (real
+per-step footprint transitions clustered offline), which fixes a single mode before the
+trajectory is formed; we remove the codebook and instead condition the flow-matching
+decoder of \cref{sec:method:fm} on the content tokens through cross-attention. That
+decoder flows in a control space of longitudinal acceleration and yaw rate under a
+kinematic unicycle model, is integrated with $K$ steps, and is sampled $N{=}16$ times
+per frame. We initialize from the released \texttt{AutoVLA\_PDMS\_89} checkpoint and
+fine-tune the language backbone jointly with the decoder on NAVSIM navtrain, with the
+vision encoder frozen and the human trajectory as the target. The resulting model, not
+the original codebook policy, is what we call ``base'' ($\alpha{=}0$). Each persona
+adapter is distilled from a teacher planner:
 \texttt{gtrs}~\cite{gtrs}, \texttt{hydra\_mdp}~\cite{hydramdp}, \texttt{wote}~\cite{wote},
 \texttt{transfuser}~\cite{transfuser}, \texttt{goalflow}~\cite{goalflow}, and
 \texttt{ddv2}~\cite{diffusiondrive}, and is applied through \cref{eq:interp}. We
