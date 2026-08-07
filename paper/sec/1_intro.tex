@@ -4,8 +4,8 @@
 End-to-end driving models learn to map sensor inputs to a trajectory by imitating
 large corpora of expert driving. The training objective rewards agreement with
 the logged future, which pushes the policy toward a single consensus behavior. In
-deployment this acts as one average driver: the same driving style is produced for
-every user and, within a scenario type, for every situation. This is usually read
+deployment this acts as one average driver: the policy has no mechanism to condition
+on user preference, so it defaults to a single learned behavioral mode. This is usually read
 as a personalization limitation, but it has two consequences that can be measured
 directly.
 
@@ -17,7 +17,8 @@ driving style, and a single safety number does not reveal where a policy sits on
 that profile. The second concerns multi-modality. When several maneuvers are
 equally reasonable, a model trained to match an averaged target and decoded as a
 single mode tends to produce a trajectory that lies between the modes rather than
-committing to one. Driving style is the quantity this paradigm removes. It is not
+committing to one. What this paradigm collapses is not the route or the scene
+response but the manner in which the motion is carried out. Driving style is not
 a coarse label but a measurable and interpretable description of how a vehicle is
 driven, which should follow user preference while still respecting the scene.
 
@@ -31,39 +32,38 @@ an explicit and controllable axis, measured on its own terms and produced by a
 decoder that can commit to a mode.
 
 We build such a formulation on a vision-language-action (VLA) backbone and call it
-YouDrive. Our starting point is a hypothesis about representation: a driving style
-behaves like a task vector, a reusable direction that can be added to the base
-policy, scaled, and combined. We distill each persona into a low-rank adapter over
-the frozen backbone, treat its weight increment as that direction, and apply it in
-the VLA content space through one interpolation coefficient. We use a VLA rather
-than a geometric encoder on purpose: task-vector control has been observed in
-language-grounded representations, where directions correspond to interpretable
-behavior, whereas a geometric feature space is organized around scene geometry and
-is a poor space in which to define a behavioral direction. To keep style
-expressible at decode time, we replace the discrete action codebook of the
-backbone with a flow-matching decoder that samples several feasible candidates and
-returns one, so that averaging does not erase the behavior a style is meant to
-express. Finally, we measure style with YDMS, a metric that gates hard safety and
+YouDrive. Its core is a generative decoder: we replace the backbone's discrete
+action codebook with a flow-matching decoder that samples several dynamically
+feasible trajectories in a kinematic control space and commits to one, so that
+equally plausible maneuvers are resolved by selection rather than averaged into a
+non-committal path. On top of this decoder we expose driving style as a control
+axis. We distill each persona into a low-rank adapter over the backbone, whose
+weight update induces a reusable direction in the VLA content representation, and a
+single coefficient then scales and composes these directions without retraining the
+backbone. We define style in the VLA content space on purpose: task-vector control
+has been observed in language-grounded representations, where directions correspond
+to interpretable behavior, and we test whether a purely geometric feature
+space---organized around scene geometry rather than behavior---affords the same
+control. Finally, we measure style with YDMS, a metric that gates hard safety and
 task requirements and then scores interpretable, scenario-normalized style
 dimensions.
 
 \paragraph{Contributions.}
 \begin{itemize}
-    \item A driving-style metric, YDMS, that separates hard safety and task gates
-    from interpretable style dimensions, together with an analysis of what these
-    dimensions do and do not capture on NAVSIM. We regard the metric as the most
-    direct attempt to make the average-driver problem measurable, and we are
-    explicit that the current version is preliminary and improvable.
-    \item A flow-matching trajectory decoder for a VLA backbone, controlled by
-    style task vectors. The decoder is an architectural change from the discrete
-    codebook to a continuous, sampling planner, and the task-vector control is a
-    methodological one that exposes style as a single, composable axis in the VLA
-    content space.
-    \item An empirical study on NAVSIM that spans a wide, controllable style range
-    at strong safety (up to 0.954 PDMS), including per-teacher and blended
-    personas and an ensemble-decoder variant of the same personalization idea,
-    along with ablations on the conditioning space and the personalization
-    mechanism.
+    \item YDMS, a driving-style metric that separates hard safety and task gates
+    from interpretable, scenario-normalized style dimensions, together with an
+    analysis of which dimensions are discriminative on NAVSIM and which remain weak.
+    \item A flow-matching trajectory decoder for a VLA planner that replaces the
+    discrete action codebook and resolves multi-modal scenes by committing to a
+    sampled, dynamically feasible trajectory rather than averaging.
+    \item A formulation of driving style as a composable task vector: a low-rank
+    persona adapter whose weight update induces a scalable direction in the VLA
+    content space, giving a single continuous control coefficient over style without
+    retraining the backbone.
+    \item An empirical study on NAVSIM showing that style forms a wide, controllable
+    range at maintained closed-loop safety (up to 0.954 PDMS) across per-teacher and
+    blended personas, and that driving style is a systematic per-driver signal that
+    coarse style labels capture poorly.
 \end{itemize}
 
 \begin{figure}[t]
