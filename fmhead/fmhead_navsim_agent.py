@@ -9,6 +9,12 @@ selection modes (the FMHead samples N candidates per scene):
   * pdm   : score each of the N candidates with the REAL navsim PDM metric
     (models.utils.score.PDM_Reward.rl_pdm_score, same sub-metrics as run_pdm_score) and
     take the argmax -> safety-aware selection usable at inference.
+  * pdm_pred: (DEPLOYABLE, non-privileged variant of pdm) same rule-based PDM scoring and
+    argmax, but the other agents' GT-future occupancy in the metric cache is replaced by a
+    CONSTANT-VELOCITY forecast built from the current frame only (perceive now, assume
+    constant velocity, no future ground truth). The HD map / centerline / route / progress
+    reference are kept as an offline map prior. This is the open-sourceable selector: it uses
+    no privileged future information, only a test-time rule-based re-ranking of candidates.
   * oracle: (eval-only diagnostic, uses GT) pick the candidate with min ADE to the scene
     GT future trajectory -> UPPER BOUND on what selection can achieve.
   * dump_all: (ADDITIVE, no selection change) write ALL N candidate trajectories per token to
@@ -23,7 +29,7 @@ selection modes (the FMHead samples N candidates per scene):
     offline by pdm_score (label_candidates_pdm.py), and the scorer is trained on the SAME
     (ctx, candidate) pairs it sees at inference (mode=learned) -- no fixed vocabulary needed.
 
-pdm/oracle/dump_all/dump_scorer need the scene (token / GT), so those modes set
+pdm/pdm_pred/oracle/dump_all/dump_scorer need the scene (token / GT), so those modes set
 `requires_scene = True` and the harness calls `compute_trajectory(agent_input, scene)`.
 mode=learned needs NO scene (deployable: scores candidates from ctx+poses via a trained
 FMHeadScorer, no metric cache / no GT future). Wire via hydra `agent._target_`
@@ -99,8 +105,8 @@ class FMHeadAutoVLAAgent(AutoVLAAgent):
         self._fm_hp = dict(hidden_size=fmhead_hidden_size, depth=fmhead_depth,
                            num_samples=fmhead_num_samples, num_steps=fmhead_num_steps,
                            cfg_weight=fmhead_cfg_weight)
-        # pdm/oracle/dump_all/dump_scorer need the scene (token / GT) -> tell the harness to pass it.
-        self.requires_scene = fmhead_select_mode in ("pdm", "oracle", "dump_all", "dump_scorer")
+        # pdm/pdm_pred/oracle/dump_all/dump_scorer need the scene (token / GT) -> tell the harness to pass it.
+        self.requires_scene = fmhead_select_mode in ("pdm", "pdm_pred", "oracle", "dump_all", "dump_scorer")
 
     def initialize(self) -> None:
         super().initialize()  # loads base AutoVLA weights (+ optional PERSONA_ADAPTERS)
@@ -160,13 +166,16 @@ class FMHeadAutoVLAAgent(AutoVLAAgent):
               f"strict=True)", flush=True)
 
         self._pdm = None
-        if self._fm_select == "pdm":
-            assert self._fm_metric_cache, "pdm select needs fmhead_metric_cache_path"
+        if self._fm_select in ("pdm", "pdm_pred"):
+            assert self._fm_metric_cache, f"{self._fm_select} select needs fmhead_metric_cache_path"
             from pathlib import Path
             from models.utils.score import PDM_Reward
             # BUG-1 fix: MetricCacheLoader does pathlib `cache_path / "metadata"`, so it MUST
             # receive a Path, not a str (str/str -> TypeError). Same bug class as GoalFlow.
-            self._pdm = PDM_Reward(Path(self._fm_metric_cache))
+            # pdm_pred: score against a current-frame constant-velocity agent forecast
+            # (deployable, no GT future) instead of the cache's privileged GT-future occupancy.
+            self._pdm = PDM_Reward(Path(self._fm_metric_cache),
+                                   constant_velocity=(self._fm_select == "pdm_pred"))
 
         # learned: load the trained deployable scorer (train_scorer.py output). It scores the
         # N candidates from ctx + poses ONLY (no metric cache, no GT future) -> legal + fast.
@@ -355,7 +364,12 @@ class FMHeadAutoVLAAgent(AutoVLAAgent):
             medoid = int(np.argmin(np.linalg.norm(eps - eps.mean(axis=0), axis=-1)))
             return Trajectory(cands[medoid][:num_poses], self._trajectory_sampling), ""
 
-        if self._fm_select == "pdm":
+        if self._fm_select in ("pdm", "pdm_pred"):
+            # pdm      -> score candidates against the cache's GT-future agent occupancy.
+            # pdm_pred -> score against a DEPLOYABLE constant-velocity forecast of agents,
+            #             built from the current frame only (no GT future); map kept as prior.
+            #             The PDM_Reward built in initialize() carries the constant_velocity
+            #             flag, so this branch is identical for both modes.
             # metric-cache key = the CURRENT-frame token, stored as SceneMetadata.initial_token
             # (== scene_dict_list[num_history_frames-1]["token"], the exact key the harness and
             # MetricCacheLoader use). SceneMetadata has NO `.token` attribute -> the old
