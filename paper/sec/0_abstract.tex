@@ -1,21 +1,30 @@
 \begin{abstract}
-End-to-end autonomous driving is trained on large trajectory corpora under
-objectives that favor a single consensus behavior, yielding a policy that acts
-as one \emph{average driver}: the same deterministic style for every user and
-scene. We argue that driving style---a measurable, interpretable aspect of
-\emph{how} motion is executed---is the dimension this paradigm erases, and that
-the widely reported drop in closed-loop scores when style is emphasized does not
-imply an inevitable style--safety trade-off, especially when safety metrics do
-not distinguish behaviors that users treat as different.
-We present \textbf{YouDrive}, which (i) measures driving style on shared
-benchmarks with a human-anchored, multi-planner style map, (ii) exposes style as
-an explicit, user-steerable axis via latent content interpolation over
-persona vectors on a vision--language--action backbone, and (iii) generates
-trajectories with a style-conditioned flow-matching planner so that
-multi-modal scenes admit decisive, sample-based choices rather than
-token-level averaging. On NAVSIM, YouDrive spans a wide, controllable style
-range while retaining strong closed-loop safety (PDMS up to
-\textbf{0.954})\TODO{final numbers}, and we further report results under the
-NAVSIM~v2 extended metric suite (EPDMS)\TODO{v2 placeholder}. Code and the style
-map will be released.
+End-to-end driving policies are trained to reproduce a single consensus behavior
+over large trajectory corpora, and the resulting planner behaves as one average
+driver: it drives the same way for every user and every scene. The gap this
+creates is not only about personalization. On the same scenarios, planners with
+comparable closed-loop safety can occupy very different regions of a
+multi-dimensional behavioral profile, so optimizing safety alone leaves driving
+style unconstrained and largely unmeasured; and when several maneuvers are
+equally reasonable, a single-mode decoder tends to interpolate between them
+rather than commit to one.
+
+We study driving style as a controllable quantity and present YouDrive, a
+personalized end-to-end framework built on a vision-language-action (VLA)
+backbone. YouDrive has three parts. A style metric, YDMS, first gates hard safety
+and task requirements and then scores behavior along interpretable,
+scenario-normalized style dimensions, so that style is assessed on its own terms
+rather than folded into a single safety number. A style axis represents each
+persona as a task vector, a low-rank weight edit distilled from a teacher
+planner, and exposes it in the VLA content space through one interpolation
+coefficient that scales and composes personas without retraining the backbone. A
+flow-matching decoder replaces the discrete action codebook of the backbone,
+samples several dynamically feasible candidates, and returns one, so that
+multi-modal scenes are resolved by commitment instead of averaging.
+
+On NAVSIM navtest, YouDrive covers a wide and controllable range of driving
+styles while retaining strong closed-loop safety, reaching 0.954 PDMS, and we
+report a set of studies that includes persona blends and an ensemble-decoder
+variant of the same idea. We treat YDMS as a first step and analyze its current
+limitations openly. Code and the metric will be released.
 \end{abstract}

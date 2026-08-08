@@ -2,38 +2,83 @@
 \label{sec:method}
 
 \subsection{Overview}
-\TODO{Pipeline figure: VLA backbone $\rightarrow$ style-conditioned
-flow-matching head $\rightarrow$ $N$ candidate trajectories $\rightarrow$
-deployable selector.}
+\label{sec:method:overview}
+YouDrive keeps a VLA backbone as a scene encoder and attaches a style-conditioned
+trajectory decoder. Multi-view images, ego state, and the navigation command are
+encoded into a sequence of content tokens. A persona is added to these tokens as a
+style direction with a single coefficient, and a flow-matching decoder samples
+several feasible trajectories from the resulting content and returns one.
+\Cref{fig:pipeline} shows the pipeline. The design follows the two properties the
+average-driver problem calls for: style is an explicit and composable axis, and the
+decoder can commit to a mode rather than average over several.
 
-\subsection{Style as a Steerable Axis}
+\begin{figure}[t]
+    \centering
+    \fbox{\parbox[c][3.0cm][c]{0.9\linewidth}{\centering\small
+    \TODO{Figure 2: pipeline. VLA backbone produces content tokens; a persona task
+    vector is interpolated in with coefficient $\alpha$; the flow-matching decoder
+    samples $N{=}16$ candidates; one is returned.}}}
+    \caption{YouDrive pipeline. The VLA backbone provides content tokens, style is
+    a task-vector interpolation applied to those tokens, and a flow-matching decoder
+    samples several feasible candidates before returning one.}
+    \label{fig:pipeline}
+\end{figure}
+
+\subsection{Style as a task vector}
 \label{sec:method:style}
-We expose driving style through latent content interpolation over persona
-vectors. Given a base hidden state $h_{\text{base}}$ and a styled hidden state
-$h_{\text{styled}}$ produced by a persona LoRA adapter, we form
+We represent a driving style as a direction that can be added to the base policy.
+For each teacher planner we distill a low-rank adapter on top of the frozen
+backbone; its weight increment $\Delta W$ is the persona's task vector in the sense
+of task arithmetic, a reusable edit that moves the base policy toward the teacher's
+behavior. Since the backbone is fixed and only the adapter is trained, all personas
+are defined against a common reference and can be scaled and combined.
+
+We expose the task vector through one user coefficient rather than by editing
+weights at run time. Let $h_{\mathrm{base}}$ be the content produced by the
+backbone and $h_{\mathrm{styled}}$ the content after applying a persona adapter. We
+condition the decoder on
 \begin{equation}
-    c = h_{\text{base}} + \alpha \,\bigl(h_{\text{styled}} - h_{\text{base}}\bigr),
+    c = h_{\mathrm{base}} + \alpha\,(h_{\mathrm{styled}} - h_{\mathrm{base}}),
+    \qquad \alpha \in [0,1],
     \label{eq:interp}
 \end{equation}
-where $\alpha \in [0,1]$ is the user-facing style knob and multiple persona
-vectors can be linearly combined with weights $w_i$ (\eg $0.6/0.4$).
-\TODO{Detail persona-vector construction from teacher planners; adapter
-training.}
+and combine several personas by
+$c = h_{\mathrm{base}} + \sum_i w_i\,(h^{(i)}_{\mathrm{styled}} - h_{\mathrm{base}})$.
+This is a first-order realization of task-vector scaling and addition in the
+content space of the VLA: $\alpha$ moves from the average driver at $\alpha{=}0$ to
+the persona at $\alpha{=}1$, and the weights $w_i$ blend personas. In
+\cref{sec:exp:vector} we check that the induced style shifts are close to linear in
+$\alpha$, additive under blending, and reversed under negation, which is the
+behavior expected of a task vector.
 
-\subsection{Style-Conditioned Flow-Matching Planner}
+Working in the VLA content space is part of the method, not an implementation
+detail. Task-vector control has been reported in language and vision-language
+representations, where directions align with interpretable behavior. A geometric
+bird's-eye or image encoder organizes its features around scene geometry rather
+than around how to act, so a style direction defined there need not be linear or
+composable. VLA content jointly encodes what the scene contains and what the agent
+is asked to do, including the navigation command and interaction cues, which is the
+setting in which a behavioral direction is well defined. \Cref{sec:exp:ablate}
+compares the same personas defined in a matched geometric feature space and finds
+weaker control.
+
+\subsection{Flow-matching trajectory decoder}
 \label{sec:method:fm}
-\TODO{Flow-matching head over trajectory controls; $K$ integration steps; $N$
-candidates per frame; kinematic constraint decode.}
+The backbone we build on decodes a trajectory by selecting one token sequence from
+a discrete action codebook, which commits to a single mode before the trajectory is
+formed. We replace this decoder with a conditional flow-matching head that regresses
+a velocity field from a noise sample to a trajectory~\cite{rectflow,flowmatching}
+using a DiT/AdaLN design~\cite{dit}, conditioned on the content $c$. The head
+decodes in a control space of longitudinal acceleration and yaw rate under a
+kinematic unicycle model, so every integrated sample is dynamically feasible. At
+inference we integrate the flow with $K$ steps and draw $N{=}16$ samples in
+parallel, producing a set of candidate trajectories instead of a point estimate.
+This change is what lets a persona express itself in multi-modal scenes: distinct
+maneuvers appear as distinct samples rather than being averaged into one.
 
-\subsection{Deployable Selection}
+\subsection{From samples to a trajectory}
 \label{sec:method:select}
-The generator emits $N=16$ candidates per frame; a deployable selector chooses
-one using only planning-time information (map, perception, agent forecasts) and
-\emph{no} ground-truth future ego trajectory. We use a
-simulation-in-the-loop scorer (PDM-style), which is a legitimate,
-inference-time selection strategy widely used on NAVSIM.
-We explicitly \emph{do not} report oracle selection (min-ADE to ground truth) or
-evaluation-metric selection as results; these are used only as diagnostic upper
-bounds on selection headroom (\cref{sec:exp:headroom}).
-\TODO{If a learned surrogate scorer is added for v2 (approximating EPDMS from
-inference-available signals), describe it here.}
+The decoder produces $N$ candidates per frame and the planner returns one. We score
+the candidates with a lightweight scorer and keep the highest-scoring one; a learned
+scorer fits the same interface. The style of the returned trajectory is a property
+of the sampled set, so style control does not depend on the choice of scorer.
