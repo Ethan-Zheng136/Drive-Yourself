@@ -105,7 +105,7 @@ Drive-Yourself/
 │   ├── fmhead_navsim_agent.py     # navsim agent (sample + select) with all selection modes
 │   ├── config/                    # fm3-kin + joint YAML configs
 │   └── run_pdms_fmhead.sh, launch_*.sh, ...   # eval + launch scripts
-├── AutoVLA/               # AutoVLA backbone + navsim devkit + youdrive code (weights/data excluded)
+├── vla_backbone/         # VLA backbone (warm-started from AutoVLA) + navsim devkit + youdrive code (weights/data excluded)
 ├── paper/                 # CVPR submission (LaTeX)
 └── docs/
     ├── RESULTS_master_table.md    # Full experiment table (+ pipeline diagram)
@@ -119,12 +119,12 @@ sensor blobs), and run logs. Weights will be released separately (HuggingFace).
 
 ## Getting started
 
-The environment follows AutoVLA + navsim. See `AutoVLA/environment.yml` and
-`AutoVLA/requirements.txt`.
+The environment follows AutoVLA + navsim. See `vla_backbone/environment.yml` and
+`vla_backbone/requirements.txt`.
 
 ```bash
 # 1) create the AutoVLA/navsim environment (conda)
-conda env create -f AutoVLA/environment.yml
+conda env create -f vla_backbone/environment.yml
 
 # 2) run navtest PDMS with the fm3-kin FMHead (paths/caches must be set locally)
 cd fmhead

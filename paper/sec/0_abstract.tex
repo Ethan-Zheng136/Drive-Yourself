@@ -1,30 +1,22 @@
 \begin{abstract}
-End-to-end driving policies imitate a consensus of human trajectories, and the
-resulting planner behaves as a single average driver with no user-specific style
-control. This is not only a personalization gap: on identical scenarios, planners
-with comparable closed-loop safety occupy very different regions of a
-multi-dimensional behavioral profile, so optimizing safety alone leaves driving
-style unconstrained and largely unmeasured, and regression-style decoding tends to
-average equally plausible maneuvers rather than commit to one.
-
-We present YouDrive, a personalized end-to-end planner built on a
-vision-language-action (VLA) backbone. At its core, a flow-matching decoder
-replaces the backbone's discrete action codebook: it samples several dynamically
-feasible trajectories in a kinematic control space and commits to one, resolving
-equally plausible maneuvers by selection rather than by a non-committal,
-between-mode average that current safety scores do not penalize. On top of this
-decoder we expose driving style as a control axis: each persona is a low-rank
-weight-space edit\,---\,a task vector in the task-arithmetic sense\,---\,that we
-realize at inference as a direction in the VLA content space, so a single
-coefficient scales and composes personas without retraining the backbone. To
-measure style beyond a single safety number, YDMS gates hard safety and task
-requirements and then scores behavior along interpretable, scenario-normalized
-style dimensions.
-
-On NAVSIM navtest, driver identity explains far more of the behavioral variance
-than coarse style labels (mean $\eta^2 \approx 0.27$ vs.\ $\le 0.09$), and a
-single coefficient traces a monotone path across the style axes while closed-loop
-safety is retained, with the strongest configuration reaching 0.954 PDMS. We
-analyze where YDMS is discriminative and where it remains weak. Code and the
-metric will be released.
+End-to-end driving policies imitate a consensus of human trajectories and behave
+as a single average driver with no user-specific style control. Beyond
+personalization, planners with comparable safety occupy very different regions of
+a behavioral profile: optimizing safety alone leaves style unconstrained and
+unmeasured, and single-mode decoding averages equally plausible maneuvers instead
+of committing to one. We present YouDrive, a personalized planner on a
+vision-language-action (VLA) backbone. Its core is a flow-matching decoder that
+replaces the discrete action codebook, samples several dynamically feasible
+trajectories in a kinematic control space, and commits to one. On top of it, style
+becomes a control axis: each persona is a low-rank weight edit\,---\,a task
+vector\,---\,realized as a direction in the VLA content space, so one coefficient
+scales and composes personas without retraining the backbone. To measure style
+rather than only safety, we introduce YDMS, a measurement framework that gates
+hard safety and task requirements, then scores interpretable, scenario-normalized
+style dimensions. On NAVSIM navtest, YDMS separates structure that safety scores
+and coarse categories collapse: driver identity explains far more behavioral
+variance than such categories (mean $\eta^2 \approx 0.27$ vs.\ $\le 0.09$). A
+single coefficient traces a monotone, controllable path while closed-loop safety
+stays above 0.90 PDMS throughout (up to 0.954). Code and the metric will be
+released.
 \end{abstract}

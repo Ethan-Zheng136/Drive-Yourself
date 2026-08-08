@@ -5,11 +5,11 @@ End-to-end driving models learn to map sensor inputs to a trajectory by imitatin
 large corpora of expert driving. The training objective rewards agreement with
 the logged future, which pushes the policy toward a single consensus behavior. In
 deployment this acts as one average driver: the policy has no mechanism to condition
-on user preference, so it defaults to a single learned behavioral mode. This is usually read
-as a personalization limitation, but it has two consequences that can be measured
-directly.
+on user preference, so it defaults to a single learned behavioral mode. This is
+commonly framed as a personalization gap, but it has two consequences that can be
+measured directly.
 
-The first concerns what safety scores can and cannot see. On the same scenarios,
+The first consequence concerns what safety scores can and cannot see. On the same scenarios,
 planners that reach comparable closed-loop safety can sit far apart on a
 multi-dimensional behavioral profile of speed, acceleration, jerk, headway, and
 spacing (\cref{fig:teaser}). A safety-only objective therefore does not constrain
@@ -22,14 +22,14 @@ response but the manner in which the motion is carried out. Driving style is not
 a coarse label but a measurable and interpretable description of how a vehicle is
 driven, which should follow user preference while still respecting the scene.
 
-Prior work on personalized or stylized driving usually conditions imitation on a
-driver profile or a discrete style label, and often reports that emphasizing
-style lowers closed-loop scores. We take a different view. Much of the reported
-tension follows from safety metrics that do not separate behaviors a user would
-consider different, and from style being entangled with scene understanding
-inside a single-mode decoder. What is missing is a formulation in which style is
-an explicit and controllable axis, measured on its own terms and produced by a
-decoder that can commit to a mode.
+Prior work on personalized and stylized driving conditions imitation on a driver
+profile or a discrete style label,
+% CITE: styledrive here; drivemyway/person2drive pending verification
+and its style-aware evaluation tends to fold style into the score itself. What is
+missing is a formulation in which style is an explicit, continuous, and composable
+axis, measured on its own terms---separately from the hard safety gates---and
+produced by a decoder that can commit to a mode rather than average across equally
+plausible maneuvers.
 
 We build such a formulation on a vision-language-action (VLA) backbone and call it
 YouDrive. Its core is a generative decoder: we replace the backbone's discrete
@@ -40,19 +40,21 @@ non-committal path. On top of this decoder we expose driving style as a control
 axis. We distill each persona into a low-rank adapter over the backbone, whose
 weight update induces a reusable direction in the VLA content representation, and a
 single coefficient then scales and composes these directions without retraining the
-backbone. We define style in the VLA content space on purpose: task-vector control
+backbone. We define style in the VLA content space on purpose. Task-vector control
 has been observed in language-grounded representations, where directions correspond
-to interpretable behavior, and we test whether a purely geometric feature
-space---organized around scene geometry rather than behavior---affords the same
-control. Finally, we measure style with YDMS, a metric that gates hard safety and
-task requirements and then scores interpretable, scenario-normalized style
-dimensions.
+to interpretable behavior,
+% CITE: taskvector here
+and we test whether a purely geometric feature space---organized around scene
+geometry rather than behavior---affords the same control. Finally, we measure
+style with YDMS, a measurement framework that gates hard safety and task
+requirements and then scores interpretable, scenario-normalized style dimensions.
 
 \paragraph{Contributions.}
 \begin{itemize}
     \item YDMS, a driving-style metric that separates hard safety and task gates
-    from interpretable, scenario-normalized style dimensions, together with an
-    analysis of which dimensions are discriminative on NAVSIM and which remain weak.
+    from interpretable, scenario-normalized style dimensions, with a variance
+    analysis showing that per-driver style is a systematic signal that a single
+    safety score and coarse style categories both miss.
     \item A flow-matching trajectory decoder for a VLA planner that replaces the
     discrete action codebook and resolves multi-modal scenes by committing to a
     sampled, dynamically feasible trajectory rather than averaging.
@@ -61,9 +63,9 @@ dimensions.
     content space, giving a single continuous control coefficient over style without
     retraining the backbone.
     \item An empirical study on NAVSIM showing that style forms a wide, controllable
-    range at maintained closed-loop safety (up to 0.954 PDMS) across per-teacher and
-    blended personas, and that driving style is a systematic per-driver signal that
-    coarse style labels capture poorly.
+    range while closed-loop safety is retained across per-teacher and blended
+    personas---PDMS stays above 0.90 throughout---including continuous
+    single-coefficient control and composition of personas.
 \end{itemize}
 
 \begin{figure}[t]

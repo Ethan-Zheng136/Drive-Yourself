@@ -7,8 +7,9 @@ interpretable style dimensions; represents each persona as a task vector in the
 content space of a VLA backbone, controlled by one interpolation coefficient; and
 decodes trajectories with a flow-matching head that samples several feasible
 candidates and returns one. On NAVSIM, style moves over a wide range while closed-loop
-safety stays high, reaching 0.954 PDMS, and a variance analysis shows that the style
-we control is a systematic per-driver signal that coarse labels largely miss.
+safety stays high---above 0.90 PDMS across all personas---and a variance analysis
+shows that the style we control is a systematic per-driver signal that coarse style
+categories largely miss.
 
 The current work has clear limits. YDMS is a first version: some of its dimensions
 separate weakly on navtest, and validating it against human preference is left for
