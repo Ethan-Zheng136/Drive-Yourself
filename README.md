@@ -84,11 +84,6 @@ kinematics, social gaps, and L2-to-teacher — are in
 - Multiple persona combos exceed **0.949** PDMS while shifting style sub-metrics substantially,
   showing style can be moved without collapsing safety.
 
-> **On selection & deployability.** The high PDMS numbers above are obtained with a
-> privileged-environment selector (`mode=pdm`, which scores candidates against logged futures) and
-> are best read as a **selection upper bound**. A fully deployable selector (map-only / PDM-Closed
-> style forecasts, or a learned scorer) is the current focus; see
-> [`docs/RESULTS_master_table.md`](docs/RESULTS_master_table.md) and `fmhead/fmhead_scorer.py`.
 
 ---
 
